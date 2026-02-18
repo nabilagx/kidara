@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🇮🇩 AR PINTAR: UNLIMITED EDITION</title>
+    <title>🧮 AR MATEMATIKA: TK EDITION</title>
     
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
@@ -13,74 +13,89 @@
     <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700&display=swap" rel="stylesheet">
 
     <style>
-        body { margin: 0; background: #ffeaa7; overflow: hidden; font-family: 'Nunito', sans-serif; }
+        body { margin: 0; background: #55efc4; overflow: hidden; font-family: 'Fredoka One', cursive; }
         canvas { position: absolute; width: 100%; height: 100%; }
         video { display: none; }
 
         /* START SCREEN */
         #start-screen {
-            position: fixed; inset: 0; background: #00cec9; z-index: 999;
+            position: fixed; inset: 0; background: #ffeaa7; z-index: 999;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
-            text-align: center; color: white;
+            text-align: center; color: #d63031;
         }
-        .btn-play {
-            background: #fdcb6e; color: #d63031; border: 4px solid white; 
-            padding: 20px 60px; font-size: 2rem; border-radius: 50px; font-family: 'Fredoka One';
-            cursor: pointer; margin-top: 30px; transition: 0.2s;
+        .mode-container { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; margin-top: 30px; }
+        .btn-mode {
+            background: #00cec9; color: white; border: 4px solid white; 
+            padding: 15px 30px; font-size: 1.5rem; border-radius: 30px; font-family: 'Fredoka One';
+            cursor: pointer; box-shadow: 0 8px 0 #00b894; transition: 0.1s; width: 200px;
         }
-        .btn-play:active { transform: scale(0.95); }
-
-        /* HUD ATAS */
+        .btn-mode:active { transform: translateY(5px); box-shadow: 0 4px 0 #00b894; }
+        
+        /* HUD SKOR & NYAWA */
         #hud {
             position: absolute; top: 0; left: 0; width: 100%; height: 120px;
-            background: rgba(255,255,255,0.95); border-bottom: 5px solid #fdcb6e;
             display: none; justify-content: space-between; align-items: center;
             padding: 0 30px; box-sizing: border-box; z-index: 10;
         }
-
-        .lvl-info h2 { font-family: 'Fredoka One'; color: #0984e3; font-size: 2rem; margin: 0; }
-        .lvl-info span { font-size: 1.2rem; color: #636e72; }
-        
-        /* KONTROL KANAN ATAS */
-        .controls { display: flex; align-items: center; gap: 20px; }
-        
-        #btn-music {
-            background: #fab1a0; border: 3px solid white; border-radius: 50%;
-            width: 60px; height: 60px; font-size: 30px; cursor: pointer;
-            display: flex; justify-content: center; align-items: center;
-            box-shadow: 0 5px 0 #e17055; transition: 0.2s;
+        .hud-left { display: flex; gap: 15px; align-items: center; }
+        .hud-box {
+            background: white; padding: 10px 20px; border-radius: 20px;
+            font-size: 1.5rem; border: 4px solid #fdcb6e; color: #fdcb6e;
+            box-shadow: 0 5px 0 rgba(0,0,0,0.1); display: flex; align-items: center; gap: 10px;
         }
-        #btn-music:active { transform: scale(0.9); }
+        .btn-back {
+            background: #ff7675; color: white; border: 3px solid white;
+            padding: 10px 20px; border-radius: 20px; font-family: 'Fredoka One';
+            cursor: pointer; font-size: 1.2rem; box-shadow: 0 5px 0 #d63031;
+        }
+        .btn-back:active { transform: translateY(3px); box-shadow: 0 2px 0 #d63031; }
 
-        #lives { font-size: 2.5rem; letter-spacing: 5px; }
-
-        /* TOAST NOTIF */
+        /* TOAST */
         #toast {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            background: white; color: #2d3436; padding: 30px 50px;
-            border-radius: 30px; font-size: 3rem; font-family: 'Fredoka One';
-            display: none; z-index: 100; text-align: center; border: 8px solid #0984e3;
+            position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%);
+            background: #00b894; color: white; padding: 20px 60px;
+            border-radius: 50px; font-size: 3rem; display: none; z-index: 100;
+            border: 8px solid white; text-align: center;
             box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+        }
+        
+        /* GAME OVER OVERLAY */
+        #game-over {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 1000;
+            display: none; flex-direction: column; justify-content: center; align-items: center;
+            color: white; gap: 20px;
         }
     </style>
 </head>
 <body>
 
     <div id="start-screen">
-        <h1 style="font-family: 'Fredoka One'; font-size: 4rem; margin: 0;">BELAJAR AR SERU</h1>
-        <p style="font-size: 1.5rem;">Mode Unlimited & Suara Guru</p>
-        <button class="btn-play" onclick="startGame()">MULAI MAIN ▶</button>
+        <h1 style="font-size: 3.5rem; margin-bottom: 10px;">🧮 MATEMATIKA SERU</h1>
+        <p style="font-size: 1.2rem;">Pilih Mode Permainan:</p>
+        
+        <div class="mode-container">
+            <button class="btn-mode" onclick="startGame('add')" style="background:#ff7675;">TAMBAH (+)</button>
+            <button class="btn-mode" onclick="startGame('sub')" style="background:#0984e3;">KURANG (-)</button>
+            <button class="btn-mode" onclick="startGame('mul')" style="background:#fdcb6e;">KALI (×)</button>
+            <button class="btn-mode" onclick="startGame('div')" style="background:#6c5ce7;">BAGI (÷)</button>
+        </div>
+    </div>
+
+    <div id="game-over">
+        <h1 style="font-size: 4rem; color: #ff7675; margin: 0;">GAME OVER</h1>
+        <p style="font-size: 2rem;">Skor Kamu: <span id="final-score">0</span></p>
+        <div style="display: flex; gap: 20px;">
+            <button class="btn-mode" onclick="backToMenu()" style="background:#636e72; width: auto;">🏠 MENU</button>
+            <button class="btn-mode" onclick="startGame(state.mode)" style="width: auto;">MAIN LAGI ↺</button>
+        </div>
     </div>
 
     <div id="hud">
-        <div class="lvl-info">
-            <h2 id="ui-title">LEVEL 1</h2>
-            <span id="ui-desc">Loading...</span>
+        <div class="hud-left">
+            <button class="btn-back" onclick="backToMenu()">🏠 KEMBALI</button>
+            <div class="hud-box">⭐ <span id="score-txt">0</span></div>
         </div>
-        <div class="controls">
-            <div id="btn-music" onclick="toggleMusic()">🎵</div>
-            <div id="lives">❤️❤️❤️</div>
-        </div>
+        <div class="hud-box">❤️ <span id="lives-txt">3</span></div>
     </div>
 
     <div id="toast">BENAR! 🎉</div>
@@ -89,216 +104,143 @@
     <canvas id="output_canvas"></canvas>
 
     <script>
-        // --- DATABASE LEVEL JUMBO (10 TEMA) ---
-        // Nanti bakal di-looping biar unlimited
-        const TARGET = 5;
-        const LEVELS = [
-            {
-                title: "ALAM vs KOTA", desc: "Pisahkan Benda Alam & Kota",
-                left: { label: "ALAM", icon: "🌳", color: "#2ecc71", items: [{name:"Pohon", emoji:"🌳"},{name:"Bunga", emoji:"🌻"},{name:"Kupu-kupu", emoji:"🦋"},{name:"Jamur", emoji:"🍄"},{name:"Daun", emoji:"🍃"}] },
-                right: { label: "KOTA", icon: "🏢", color: "#3498db", items: [{name:"Gedung", emoji:"🏢"},{name:"Mobil", emoji:"🚗"},{name:"Bis", emoji:"🚌"},{name:"Lampu", emoji:"💡"},{name:"Uang", emoji:"💵"}] }
-            },
-            {
-                title: "MAKANAN", desc: "Sehat vs Manis",
-                left: { label: "SEHAT", icon: "🥦", color: "#27ae60", items: [{name:"Brokoli", emoji:"🥦"},{name:"Wortel", emoji:"🥕"},{name:"Pisang", emoji:"🍌"},{name:"Apel", emoji:"🍎"},{name:"Telur", emoji:"🥚"}] },
-                right: { label: "MANIS", icon: "🍭", color: "#e84393", items: [{name:"Permen", emoji:"🍭"},{name:"Donat", emoji:"🍩"},{name:"Es Krim", emoji:"🍦"},{name:"Kue", emoji:"🍰"},{name:"Coklat", emoji:"🍫"}] }
-            },
-            {
-                title: "FISIKA", desc: "Benda Padat vs Cair",
-                left: { label: "PADAT", icon: "🧱", color: "#e67e22", items: [{name:"Batu", emoji:"🪨"},{name:"Kayu", emoji:"🪵"},{name:"Palu", emoji:"🔨"},{name:"Buku", emoji:"📘"},{name:"Bola", emoji:"⚽"}] },
-                right: { label: "CAIR", icon: "💧", color: "#00cec9", items: [{name:"Air", emoji:"💧"},{name:"Susu", emoji:"🥛"},{name:"Jus", emoji:"🧃"},{name:"Madu", emoji:"🍯"},{name:"Sup", emoji:"🥣"}] }
-            },
-            {
-                title: "TRANSPORTASI", desc: "Darat vs Udara",
-                left: { label: "DARAT", icon: "🚗", color: "#8e44ad", items: [{name:"Mobil", emoji:"🚗"},{name:"Bis", emoji:"🚌"},{name:"Truk", emoji:"🚚"},{name:"Motor", emoji:"🛵"},{name:"Sepeda", emoji:"🚲"}] },
-                right: { label: "UDARA", icon: "✈️", color: "#2980b9", items: [{name:"Pesawat", emoji:"✈️"},{name:"Helikopter", emoji:"🚁"},{name:"Roket", emoji:"🚀"},{name:"Balon Udara", emoji:"🎈"},{name:"Jet", emoji:"🛩️"}] }
-            },
-            {
-                title: "HEWAN", desc: "Kaki Dua vs Kaki Empat",
-                left: { label: "KAKI 2", icon: "🐓", color: "#f1c40f", items: [{name:"Ayam", emoji:"🐓"},{name:"Bebek", emoji:"🦆"},{name:"Burung", emoji:"🐦"},{name:"Penguin", emoji:"🐧"},{name:"Angsa", emoji:"🦢"}] },
-                right: { label: "KAKI 4", icon: "🐅", color: "#d35400", items: [{name:"Harimau", emoji:"🐅"},{name:"Sapi", emoji:"🐄"},{name:"Kucing", emoji:"🐈"},{name:"Kuda", emoji:"🐎"},{name:"Gajah", emoji:"🐘"}] }
-            },
-            {
-                title: "SUHU", desc: "Panas vs Dingin",
-                left: { label: "PANAS", icon: "🔥", color: "#e74c3c", items: [{name:"Api", emoji:"🔥"},{name:"Matahari", emoji:"☀️"},{name:"Kopi Panas", emoji:"☕"},{name:"Lahar", emoji:"🌋"},{name:"Cabai", emoji:"🌶️"}] },
-                right: { label: "DINGIN", icon: "🧊", color: "#74b9ff", items: [{name:"Es Batu", emoji:"🧊"},{name:"Salju", emoji:"❄️"},{name:"Es Krim", emoji:"🍦"},{name:"Boneka Salju", emoji:"⛄"},{name:"Angin", emoji:"💨"}] }
-            },
-            {
-                title: "ANGKASA", desc: "Siang vs Malam",
-                left: { label: "SIANG", icon: "☀️", color: "#f39c12", items: [{name:"Matahari", emoji:"☀️"},{name:"Awan", emoji:"☁️"},{name:"Pelangi", emoji:"🌈"},{name:"Layangan", emoji:"🪁"},{name:"Topi", emoji:"🧢"}] },
-                right: { label: "MALAM", icon: "🌙", color: "#2c3e50", items: [{name:"Bulan", emoji:"🌙"},{name:"Bintang", emoji:"⭐"},{name:"Hantu", emoji:"👻"},{name:"Kelelawar", emoji:"🦇"},{name:"Lampu Tidur", emoji:"🪔"}] }
-            },
-            {
-                title: "WARNA", desc: "Merah vs Biru",
-                left: { label: "MERAH", icon: "🔴", color: "#c0392b", items: [{name:"Apel", emoji:"🍎"},{name:"Mobil Merah", emoji:"🚗"},{name:"Hati", emoji:"❤️"},{name:"Mawar", emoji:"🌹"},{name:"Stroberi", emoji:"🍓"}] },
-                right: { label: "BIRU", icon: "🔵", color: "#2980b9", items: [{name:"Berlian", emoji:"💎"},{name:"Buku Biru", emoji:"📘"},{name:"Ikan", emoji:"🐟"},{name:"Jeans", emoji:"👖"},{name:"Payung", emoji:"☂️"}] }
-            },
-            {
-                title: "MATEMATIKA", desc: "Ganjil vs Genap",
-                left: { label: "GANJIL", icon: "1️⃣", color: "#16a085", items: [{name:"Satu", emoji:"1️⃣"},{name:"Tiga", emoji:"3️⃣"},{name:"Lima", emoji:"5️⃣"},{name:"Tujuh", emoji:"7️⃣"},{name:"Sembilan", emoji:"9️⃣"}] },
-                right: { label: "GENAP", icon: "2️⃣", color: "#8e44ad", items: [{name:"Dua", emoji:"2️⃣"},{name:"Empat", emoji:"4️⃣"},{name:"Enam", emoji:"6️⃣"},{name:"Delapan", emoji:"8️⃣"},{name:"Sepuluh", emoji:"🔟"}] }
-            },
-            {
-                title: "EMOSI", desc: "Senang vs Sedih",
-                left: { label: "SENANG", icon: "😄", color: "#f1c40f", items: [{name:"Senyum", emoji:"😄"},{name:"Ketawa", emoji:"😆"},{name:"Cinta", emoji:"🥰"},{name:"Keren", emoji:"😎"},{name:"Pesta", emoji:"🥳"}] },
-                right: { label: "SEDIH", icon: "😢", color: "#95a5a6", items: [{name:"Nangis", emoji:"😢"},{name:"Sakit", emoji:"🤒"},{name:"Tidur", emoji:"😴"},{name:"Bingung", emoji:"😕"},{name:"Takut", emoji:"😱"}] }
-            }
-        ];
-
-        let state = { 
-            lvlIdx: 0, 
-            lives: 3, 
-            leftFill: 0, rightFill: 0, 
-            items: [], heldItem: null, 
-            handX: 0, handY: 0, isPinching: false, 
-            isPlaying: false,
-            isMusicMuted: false, // Status Mute Musik
-            speedMultiplier: 1.0 // Buat level makin susah
+        // --- CONFIG & STATE ---
+        const COLORS = ["#ff7675", "#74b9ff", "#a29bfe", "#fdcb6e", "#55efc4"];
+        
+        let state = {
+            mode: 'add', score: 0, lives: 3, items: [], heldItem: null,
+            handX: 0, handY: 0, isPinching: false, isPlaying: false,
+            currentQ: { n1: 0, n2: 0, res: 0, opSym: '+', missingIdx: 2, ans: 0 },
+            dropZone: {x:0, y:0, w:0, h:0}
         };
 
-        // --- SISTEM SUARA (VOICE & MUSIC) ---
-        let voiceIndo = null;
-        
-        function checkVoice() {
-            const voices = window.speechSynthesis.getVoices();
-            voiceIndo = voices.find(v => v.lang.includes("id") || v.name.includes("Indonesia"));
-        }
-        window.speechSynthesis.onvoiceschanged = checkVoice;
+        const actx = new (window.AudioContext || window.webkitAudioContext)();
 
+        // --- AUDIO & TTS ---
         function speak(text) {
-            // Suara Guru TIDAK BOLEH di-mute oleh tombol musik
             if ('speechSynthesis' in window) {
                 window.speechSynthesis.cancel();
                 const msg = new SpeechSynthesisUtterance(text);
-                if (voiceIndo) msg.voice = voiceIndo;
-                msg.lang = 'id-ID';
-                msg.rate = 1.0; 
+                msg.lang = 'id-ID'; msg.rate = 0.9; 
                 window.speechSynthesis.speak(msg);
             }
         }
 
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        const actx = new AudioContext();
-        let nextNoteTime = 0;
-        let noteIndex = 0;
-        const melody = [261.63, 329.63, 392.00, 523.25, 392.00, 329.63]; 
-
-        function scheduler() {
-            // Cek apakah musik di-mute?
-            if (!state.isMusicMuted && nextNoteTime < actx.currentTime + 0.1) {
-                playNote(melody[noteIndex % melody.length], nextNoteTime);
-                nextNoteTime += 0.5;
-                noteIndex++;
-            }
-            if(state.isPlaying) window.setTimeout(scheduler, 50);
-        }
-
-        function playNote(freq, time) {
-            const osc = actx.createOscillator();
-            const gain = actx.createGain();
-            osc.connect(gain); gain.connect(actx.destination);
-            osc.type = 'sine'; osc.frequency.value = freq;
-            gain.gain.setValueAtTime(0.05, time); 
-            gain.gain.exponentialRampToValueAtTime(0.001, time + 0.5);
-            osc.start(time); osc.stop(time + 0.5);
-        }
-
         function playSFX(type) {
-            // SFX (Efek Suara) ikut ke-mute kalau musik dimatiin? 
-            // Biasanya SFX tetep nyala, tapi kalau mau dimatiin juga, tambahin cek state.isMusicMuted
-            const osc = actx.createOscillator();
-            const gain = actx.createGain();
+            if (actx.state === 'suspended') actx.resume();
+            const osc = actx.createOscillator(); const gain = actx.createGain();
             osc.connect(gain); gain.connect(actx.destination);
             const now = actx.currentTime;
-            
-            if (type === 'correct') { 
-                osc.type = 'triangle'; osc.frequency.setValueAtTime(600, now); 
-                osc.frequency.exponentialRampToValueAtTime(1200, now + 0.1); 
-                gain.gain.setValueAtTime(0.3, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
-            } else if (type === 'wrong') { 
-                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, now); 
-                osc.frequency.linearRampToValueAtTime(100, now + 0.2); 
-                gain.gain.setValueAtTime(0.3, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
-            } else if (type === 'pop') { 
-                osc.frequency.setValueAtTime(400, now); gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+
+            if (type === 'pop') { 
+                osc.frequency.setValueAtTime(600, now); gain.gain.setValueAtTime(0.1, now); 
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+            } else if (type === 'win') {
+                osc.type = 'triangle'; 
+                osc.frequency.setValueAtTime(400, now); osc.frequency.linearRampToValueAtTime(800, now+0.2);
+                gain.gain.setValueAtTime(0.2, now); gain.gain.linearRampToValueAtTime(0, now+0.5);
+            } else if (type === 'wrong') {
+                osc.type = 'sawtooth'; 
+                osc.frequency.setValueAtTime(150, now); osc.frequency.linearRampToValueAtTime(50, now+0.3);
+                gain.gain.setValueAtTime(0.2, now); gain.gain.linearRampToValueAtTime(0, now+0.3);
             }
             osc.start(now); osc.stop(now + 0.5);
         }
 
-        function toggleMusic() {
-            state.isMusicMuted = !state.isMusicMuted;
-            document.getElementById('btn-music').innerText = state.isMusicMuted ? "🔇" : "🎵";
-            // Note: Tidak memanggil speak() disini, jadi suara guru aman.
+        // --- NAVIGATION ---
+        function backToMenu() {
+            state.isPlaying = false;
+            state.items = []; 
+            document.getElementById('hud').style.display = 'none';
+            document.getElementById('game-over').style.display = 'none';
+            document.getElementById('start-screen').style.display = 'flex';
         }
 
-        // --- SETUP ---
-        const video = document.getElementById('input_video');
-        const canvas = document.getElementById('output_canvas');
-        const ctx = canvas.getContext('2d');
-        const hud = document.getElementById('hud');
-        
-        const hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
-        hands.setOptions({ maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.7, minTrackingConfidence: 0.7 });
-        hands.onResults(onResults);
+        // --- MATH GENERATOR ---
+        function generateQuestion() {
+            let n1, n2, res, opSym, missingIdx, ans;
+            
+            if (state.mode === 'add') {
+                n1 = Math.floor(Math.random() * 9) + 1; n2 = Math.floor(Math.random() * 9) + 1; 
+                res = n1 + n2; opSym = "+";
+            } else if (state.mode === 'sub') {
+                n2 = Math.floor(Math.random() * 9) + 1; res = Math.floor(Math.random() * 9) + 1; 
+                n1 = n2 + res; opSym = "-";
+            } else if (state.mode === 'mul') {
+                n1 = Math.floor(Math.random() * 5) + 1; n2 = Math.floor(Math.random() * 5) + 1;
+                res = n1 * n2; opSym = "×";
+            } else if (state.mode === 'div') {
+                n2 = Math.floor(Math.random() * 3) + 2; res = Math.floor(Math.random() * 4) + 1;
+                n1 = n2 * res; opSym = ":";
+            }
 
-        const camera = new Camera(video, {
-            onFrame: async () => { await hands.send({image: video}); },
-            width: 1280, height: 720
-        });
+            missingIdx = Math.floor(Math.random() * 3);
+            if (missingIdx === 0) ans = n1;
+            else if (missingIdx === 1) ans = n2;
+            else ans = res;
 
-        function startGame() {
-            if (actx.state === 'suspended') actx.resume();
-            checkVoice();
+            state.currentQ = { n1, n2, res, opSym, missingIdx, ans };
+            
+            const missingTxt = "titik titik";
+            let opSpeak = opSym === ':' ? 'bagi' : opSym === '×' ? 'kali' : opSym === '-' ? 'kurang' : 'tambah';
+            let qText = "";
+            if (missingIdx === 0) qText = `${missingTxt} ${opSpeak} ${n2} sama dengan ${res}`;
+            else if (missingIdx === 1) qText = `${n1} ${opSpeak} ${missingTxt} sama dengan ${res}`;
+            else qText = `${n1} ${opSpeak} ${n2} sama dengan berapa?`;
+            
+            speak(qText);
+        }
+
+        // --- GAME SYSTEM ---
+        function startGame(mode) {
+            state.mode = mode; state.score = 0; state.lives = 3; state.items = [];
+            
             document.getElementById('start-screen').style.display = 'none';
-            hud.style.display = 'flex';
+            document.getElementById('game-over').style.display = 'none';
+            document.getElementById('hud').style.display = 'flex';
+            document.getElementById('score-txt').innerText = 0;
+            document.getElementById('lives-txt').innerText = "❤️❤️❤️";
+            
             camera.start();
             state.isPlaying = true;
-            updateUI();
-            spawnLoop();
-            
-            // Start Music Loop
-            nextNoteTime = actx.currentTime + 0.1;
-            scheduler();
-            
-            speak("Halo! Ayo kita mulai belajarnya!");
-        }
-
-        // --- GAME LOOP ---
-        function spawnLoop() {
-            if (state.isPlaying) spawnItem();
-            // Spawn makin cepet kalau level makin tinggi
-            const spawnRate = Math.max(800, 2000 - (state.lvlIdx * 100)); 
-            setTimeout(spawnLoop, spawnRate);
+            generateQuestion();
+            loop();
         }
 
         function spawnItem() {
-            if (state.items.length >= 6) return;
-            const lvl = LEVELS[state.lvlIdx % LEVELS.length]; // Modulo biar looping kalau level > 10
+            const isCorrect = Math.random() > 0.4; 
+            let val;
             
-            let possible = [];
-            if (state.leftFill < TARGET) possible.push('left');
-            if (state.rightFill < TARGET) possible.push('right');
-            if (possible.length === 0) return;
+            if (isCorrect) {
+                val = state.currentQ.ans.toString();
+            } else {
+                let wrongVal;
+                do { wrongVal = Math.max(0, state.currentQ.ans + Math.floor(Math.random() * 5) - 2); } 
+                while (wrongVal === state.currentQ.ans);
+                val = wrongVal.toString();
+            }
 
-            const side = possible[Math.floor(Math.random() * possible.length)];
-            const pool = side === 'left' ? lvl.left.items : lvl.right.items;
-            const data = pool[Math.floor(Math.random() * pool.length)];
-            const W = canvas.width;
-
+            const tkSpeed = 0.8 + (state.score * 0.005); 
             state.items.push({
-                name: data.name, 
-                emoji: data.emoji,
-                side: side,
-                x: Math.random() * (W - 200) + 100,
-                y: -100,
-                // Speed nambah tiap kali loop database
-                speed: (1.5 + (state.speedMultiplier * 0.2)) * state.speedMultiplier,
-                spoken: false
+                val: val, isCorrect: parseInt(val) === state.currentQ.ans,
+                x: Math.random() * (window.innerWidth - 100) + 50,
+                y: -100, speed: tkSpeed, 
+                color: COLORS[Math.floor(Math.random() * COLORS.length)]
             });
         }
 
-        function handleGameLogic(W, H) {
-            // GRAB
+        function loop() {
+            if(!state.isPlaying) return;
+            if (Math.random() < 0.015 && state.items.length < 4) spawnItem();
+
+            const H = window.innerHeight;
+            for (let i = state.items.length - 1; i >= 0; i--) {
+                let item = state.items[i];
+                if (item === state.heldItem) { item.x = state.handX; item.y = state.handY; } 
+                else { item.y += item.speed; }
+                if (item.y > H + 100) state.items.splice(i, 1);
+            }
+
             if (state.isPinching && !state.heldItem) {
                 let closest = null; let minD = 80;
                 state.items.forEach(item => {
@@ -306,170 +248,155 @@
                     if (d < minD) { minD = d; closest = item; }
                 });
                 if (closest) {
-                    state.heldItem = closest;
-                    playSFX('pop');
-                    if (!closest.spoken) { speak(closest.name); closest.spoken = true; }
+                    state.heldItem = closest; playSFX('pop'); speak(closest.val); 
                 }
             }
-            // DROP
             if (!state.isPinching && state.heldItem) {
-                checkBin(state.heldItem, W, H);
-                state.heldItem = null;
+                checkAnswer(state.heldItem); state.heldItem = null;
             }
-            // MOVE
-            for (let i = state.items.length - 1; i >= 0; i--) {
-                let item = state.items[i];
-                if (item === state.heldItem) {
-                    item.x = state.handX; item.y = state.handY;
+            requestAnimationFrame(loop);
+        }
+
+        function isInZone(item) {
+            const dz = state.dropZone;
+            return (item.x > dz.x && item.x < dz.x + dz.w && item.y > dz.y && item.y < dz.y + dz.h);
+        }
+
+        function checkAnswer(item) {
+            if (isInZone(item)) {
+                if (item.isCorrect) {
+                    playSFX('win'); showToast("BENAR! 🎉", "#00b894");
+                    state.score += 10; document.getElementById('score-txt').innerText = state.score;
+                    state.items = []; setTimeout(generateQuestion, 2000); 
                 } else {
-                    item.y += item.speed;
-                    // Jatuh = Hilang (No Penalty)
-                    if (item.y > H + 100) state.items.splice(i, 1);
+                    playSFX('wrong'); state.lives--; updateLivesUI();
+                    if (state.lives <= 0) doGameOver();
+                    else { showToast("SALAH ❌", "#d63031"); item.y = -100; }
                 }
             }
         }
 
-        function checkBin(item, W, H) {
-            const dropY = H - 300;
-            const inLeft = item.x < 350 && item.y > dropY;
-            const inRight = item.x > W - 350 && item.y > dropY;
-            let targetSide = null;
-            if (inLeft) targetSide = 'left'; 
-            if (inRight) targetSide = 'right';
-
-            if (!targetSide) return;
-
-            if (targetSide === item.side) {
-                playSFX('correct'); speak("Benar!"); showToast("BENAR! 🌟", "#2ecc71");
-                
-                if (targetSide === 'left' && state.leftFill < TARGET) state.leftFill++;
-                else if (targetSide === 'right' && state.rightFill < TARGET) state.rightFill++;
-                else { bounceItem(item, W, H); return; }
-
-                state.items = state.items.filter(i => i !== item);
-                if (state.leftFill >= TARGET && state.rightFill >= TARGET) nextLevel();
-            } else {
-                playSFX('wrong'); speak("Salah tempat!"); showToast("SALAH! ❌", "#d63031");
-                state.items = state.items.filter(i => i !== item);
-                state.lives--; updateUI();
-                if (state.lives <= 0) gameOver();
-            }
+        function updateLivesUI() {
+            let s = ""; for(let i=0; i<state.lives; i++) s += "❤️";
+            document.getElementById('lives-txt').innerText = s;
         }
-
-        function bounceItem(item, W, H) { item.y = H/2; item.x = W/2; speak("Penuh!"); }
-        
+        function doGameOver() {
+            state.isPlaying = false;
+            document.getElementById('game-over').style.display = 'flex';
+            document.getElementById('final-score').innerText = state.score;
+            speak("Yah, permainan selesai.");
+        }
         function showToast(text, color) {
-            const t = document.getElementById('toast'); t.innerText = text; t.style.borderColor = color || "#0984e3";
+            const t = document.getElementById('toast');
+            t.innerText = text; t.style.backgroundColor = color;
             t.style.display = 'block'; setTimeout(() => t.style.display = 'none', 1500);
         }
 
-        function updateUI() {
-            const lvl = LEVELS[state.lvlIdx % LEVELS.length];
-            document.getElementById('ui-title').innerText = lvl.title;
-            document.getElementById('ui-desc').innerText = lvl.desc;
-            let s = ""; for(let i=0; i<state.lives; i++) s+="❤️";
-            document.getElementById('lives').innerHTML = s;
-        }
-
-        function nextLevel() {
-            state.lvlIdx++;
-            // LOGIC UNLIMITED: Kalau index lebih besar dari jumlah level,
-            // dia bakal loop balik ke 0 (karena pake Modulo %)
-            // TAPI speed multiplier ditambah biar makin cepet/susah.
-            if (state.lvlIdx % LEVELS.length === 0) {
-                state.speedMultiplier += 0.5; // Level makin susah
-                showToast("SPEED UP! 🔥");
-            } else {
-                showToast("LEVEL NAIK! 🚀");
-            }
-            
-            const nextLvl = LEVELS[state.lvlIdx % LEVELS.length];
-            speak("Lanjut. " + nextLvl.title);
-            
-            state.leftFill = 0; state.rightFill = 0; state.items = []; state.heldItem = null;
-            updateUI();
-        }
-
-        function gameOver() {
-            showToast("GAME OVER"); speak("Yah, coba lagi yuk!");
-            state.lvlIdx = 0; state.lives = 3; state.speedMultiplier = 1.0;
-            state.leftFill = 0; state.rightFill = 0; state.items = [];
-            updateUI();
-        }
-
-        // --- DRAWING ---
+        // --- RENDER ---
         function onResults(results) {
+            const canvas = document.getElementById('output_canvas');
+            const ctx = canvas.getContext('2d');
             canvas.width = window.innerWidth; canvas.height = window.innerHeight;
             const W = canvas.width; const H = canvas.height;
-            ctx.save(); ctx.translate(W, 0); ctx.scale(-1, 1); ctx.drawImage(results.image, 0, 0, W, H); ctx.restore();
 
+            ctx.save(); ctx.translate(W, 0); ctx.scale(-1, 1);
+            ctx.drawImage(results.image, 0, 0, W, H);
+            ctx.restore();
+
+            if(state.isPlaying) { drawBoard(ctx, W, H); drawItems(ctx); }
+
+            // HAND TRACKING & SKELETON
             if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
                 const lm = results.multiHandLandmarks[0];
-                const ix = W - (lm[8].x * W); const iy = lm[8].y * H;
-                const tx = W - (lm[4].x * W); const ty = lm[4].y * H;
-                state.handX += (ix - state.handX) * 0.4; state.handY += (iy - state.handY) * 0.4;
-                const dist = Math.hypot(ix - tx, iy - ty);
+                const ix = (1 - lm[8].x) * W; const iy = lm[8].y * H; 
+                const tx = (1 - lm[4].x) * W; const ty = lm[4].y * H; 
                 
-                if (!state.isPinching && dist < 50) state.isPinching = true;
-                else if (state.isPinching && dist > 80) state.isPinching = false;
+                state.handX += (ix - state.handX) * 0.5;
+                state.handY += (iy - state.handY) * 0.5;
+                state.isPinching = Math.hypot(ix - tx, iy - ty) < 60;
 
-                drawHand(ctx, lm, W, H, state.isPinching);
-                if (state.isPlaying) handleGameLogic(W, H);
+                // --- INI SKELETONNYA NABILA! ---
+                ctx.save();
+                ctx.strokeStyle = "rgba(255, 255, 255, 0.6)"; 
+                ctx.lineWidth = 4;
+                ctx.lineCap = "round"; ctx.lineJoin = "round";
+                const bones = [[0,1],[1,2],[2,3],[3,4], [0,5],[5,6],[6,7],[7,8], [5,9],[9,10],[10,11],[11,12], [9,13],[13,14],[14,15],[15,16], [13,17],[17,18],[18,19],[19,20], [0,17]];
+                ctx.beginPath();
+                bones.forEach(b => {
+                    const p1 = lm[b[0]]; const p2 = lm[b[1]];
+                    ctx.moveTo((1 - p1.x) * W, p1.y * H);
+                    ctx.lineTo((1 - p2.x) * W, p2.y * H);
+                });
+                ctx.stroke();
+                ctx.restore();
+                // -----------------------------
+
+                // Cursor Circle
+                ctx.beginPath(); ctx.arc(state.handX, state.handY, 20, 0, Math.PI*2);
+                ctx.fillStyle = state.isPinching ? "#fdcb6e" : "rgba(255,255,255,0.5)";
+                ctx.fill(); ctx.lineWidth=3; ctx.strokeStyle="white"; ctx.stroke();
             }
-            if (state.isPlaying) { drawBaskets(ctx, W, H); drawItems(ctx); }
         }
 
-        function drawHand(ctx, lm, W, H, isGrabbing) {
-            ctx.save(); ctx.lineJoin="round"; ctx.lineCap="round"; ctx.lineWidth=8;
-            ctx.strokeStyle = isGrabbing ? "#ff9f43" : "#00cec9";
-            const bones = [[0,1],[1,2],[2,3],[3,4], [0,5],[5,6],[6,7],[7,8], [5,9],[9,10],[10,11],[11,12], [9,13],[13,14],[14,15],[15,16], [13,17],[17,18],[18,19],[19,20], [0,17]];
-            ctx.beginPath();
-            bones.forEach(b => {
-                const p1 = lm[b[0]]; const p2 = lm[b[1]];
-                ctx.moveTo(W - p1.x * W, p1.y * H); ctx.lineTo(W - p2.x * W, p2.y * H);
-            });
-            ctx.stroke();
-            ctx.fillStyle = "white"; ctx.beginPath(); ctx.arc(state.handX, state.handY, 15, 0, Math.PI*2); ctx.fill();
-            ctx.restore();
+        function drawBoard(ctx, W, H) {
+            const q = state.currentQ;
+            const bw = 800; const bh = 220; 
+            const bx = (W - bw) / 2; const by = H - bh - 20;
+            
+            ctx.fillStyle = "#2d3436";
+            ctx.beginPath(); ctx.roundRect(bx, by, bw, bh, 20); ctx.fill();
+            ctx.strokeStyle = "#b2bec3"; ctx.lineWidth = 10; ctx.stroke();
+            ctx.fillStyle = "#d63031"; ctx.beginPath(); ctx.roundRect(bx+20, by+bh-10, bw-40, 15, 5); ctx.fill();
+
+            const centerY = by + bh/2; const startX = bx + 100; const gap = 150;
+            ctx.font = "bold 80px 'Fredoka One'"; ctx.textBaseline = "middle"; ctx.textAlign = "center";
+            
+            function drawSlot(index, val, xPos) {
+                if (q.missingIdx === index) {
+                    const zw = 130; const zh = 130;
+                    state.dropZone = {x: xPos - zw/2, y: centerY - zh/2, w: zw, h: zh};
+                    
+                    let isHover = state.heldItem && isInZone(state.heldItem);
+                    ctx.fillStyle = isHover ? "rgba(0, 184, 148, 0.5)" : "rgba(255,255,255,0.1)";
+                    ctx.strokeStyle = isHover ? "#00b894" : "#ffeaa7";
+                    ctx.setLineDash([10, 10]); ctx.lineWidth = 5;
+                    ctx.beginPath(); ctx.roundRect(xPos - zw/2, centerY - zh/2, zw, zh, 15);
+                    ctx.fill(); ctx.stroke(); ctx.setLineDash([]);
+                    
+                    if (!isHover) { ctx.fillStyle = "#ffeaa7"; ctx.fillText("?", xPos, centerY + 5); }
+                } else { ctx.fillStyle = "white"; ctx.fillText(val, xPos, centerY); }
+            }
+
+            drawSlot(0, q.n1, startX);
+            ctx.fillStyle = "#fab1a0"; ctx.fillText(q.opSym, startX + gap, centerY);
+            drawSlot(1, q.n2, startX + gap*2);
+            ctx.fillStyle = "#fab1a0"; ctx.fillText("=", startX + gap*3, centerY);
+            drawSlot(2, q.res, startX + gap*4);
         }
 
         function drawItems(ctx) {
-            ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.font="70px Arial";
+            ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.font = "bold 70px 'Fredoka One'";
             state.items.forEach(item => {
                 ctx.save(); ctx.translate(item.x, item.y);
-                ctx.fillStyle="white"; ctx.beginPath(); ctx.arc(0,0,50,0,Math.PI*2); ctx.fill();
-                ctx.strokeStyle="#2d3436"; ctx.lineWidth=3; ctx.stroke();
-                
-                const txt = item.emoji ? item.emoji : "❓";
-                ctx.fillStyle="black"; ctx.fillText(txt, 0, 5);
-
-                if (item === state.heldItem) { ctx.strokeStyle="#ff9f43"; ctx.lineWidth=8; ctx.stroke(); }
+                ctx.fillStyle = "rgba(0,0,0,0.2)"; ctx.beginPath(); ctx.arc(5, 5, 45, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = item.color;
+                if(item === state.heldItem) { ctx.scale(1.2, 1.2); }
+                ctx.beginPath(); ctx.arc(0, 0, 45, 0, Math.PI*2); ctx.fill();
+                ctx.strokeStyle = "rgba(255,255,255,0.4)"; ctx.lineWidth = 5; ctx.stroke();
+                ctx.fillStyle = "white"; ctx.fillText(item.val, 0, 5);
                 ctx.restore();
             });
         }
 
-        function drawBaskets(ctx, W, H) {
-            const lvl = LEVELS[state.lvlIdx % LEVELS.length];
-            drawOneBasket(ctx, 20, H-280, lvl.left, state.leftFill);
-            drawOneBasket(ctx, W-320, H-280, lvl.right, state.rightFill);
-        }
+        const video = document.getElementById('input_video');
+        const hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
+        hands.setOptions({ maxNumHands: 1, modelComplexity: 0, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5 });
+        hands.onResults(onResults);
 
-        function drawOneBasket(ctx, x, y, data, count) {
-            const w=300; const h=250; ctx.save();
-            ctx.fillStyle="rgba(255,255,255,0.9)"; ctx.strokeStyle=data.color; ctx.lineWidth=6;
-            ctx.beginPath(); ctx.roundRect(x,y,w,h,20); ctx.fill(); ctx.stroke();
-            
-            ctx.fillStyle=data.color; ctx.textAlign="center";
-            ctx.font="80px Arial"; ctx.fillText(data.icon, x+w/2, y+90);
-            ctx.font="bold 28px 'Fredoka One'"; ctx.fillText(data.label, x+w/2, y+160);
-            
-            const dot=30; const gap=10; const startX = x + (w - (TARGET*(dot+gap)-gap))/2 + dot/2;
-            for(let i=0; i<TARGET; i++) {
-                ctx.beginPath(); ctx.arc(startX+i*(dot+gap), y+215, dot/2, 0, Math.PI*2);
-                if(i < count) { ctx.fillStyle=data.color; ctx.fill(); }
-                else { ctx.strokeStyle="#ccc"; ctx.lineWidth=2; ctx.stroke(); }
-            } ctx.restore();
-        }
+        const camera = new Camera(video, {
+            onFrame: async () => { await hands.send({image: video}); },
+            width: 640, height: 480
+        });
     </script>
 </body>
 </html>
