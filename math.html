@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🧮 AR MATEMATIKA: TK EDITION</title>
+    <title>🧮 AR MATEMATIKA</title>
     
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
@@ -30,6 +30,19 @@
             cursor: pointer; box-shadow: 0 8px 0 #00b894; transition: 0.1s; width: 200px;
         }
         .btn-mode:active { transform: translateY(5px); box-shadow: 0 4px 0 #00b894; }
+
+        /* --- CSS TOMBOL KEMBALI KE INDEX --- */
+        .btn-back-index {
+            position: absolute;
+            top: 20px; left: 20px;
+            background: white; color: #d63031; /* Merah sesuai tema math */
+            border: none; padding: 10px 20px;
+            border-radius: 20px; font-family: 'Fredoka One';
+            font-size: 1.2rem; cursor: pointer;
+            box-shadow: 0 4px 0 #c0392b;
+            text-decoration: none;
+        }
+        .btn-back-index:active { transform: translateY(4px); box-shadow: none; }
         
         /* HUD SKOR & NYAWA */
         #hud {
@@ -70,6 +83,7 @@
 <body>
 
     <div id="start-screen">
+        <a href="index.html" class="btn-back-index">⬅ KEMBALI</a>
         <h1 style="font-size: 3.5rem; margin-bottom: 10px;">🧮 MATEMATIKA SERU</h1>
         <p style="font-size: 1.2rem;">Pilih Mode Permainan:</p>
         
@@ -399,4 +413,5 @@
         });
     </script>
 </body>
+
 </html>
