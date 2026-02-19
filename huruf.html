@@ -30,6 +30,28 @@
         }
         .btn-play:active { transform: translateY(5px); box-shadow: none; }
 
+        /* --- CSS TOMBOL NAVIGASI --- */
+        .btn-back-index {
+            position: absolute; top: 20px; left: 20px;
+            background: white; color: #00cec9;
+            border: none; padding: 10px 20px;
+            border-radius: 20px; font-family: 'Fredoka One';
+            font-size: 1.2rem; cursor: pointer; text-decoration: none;
+            box-shadow: 0 4px 0 #00b894;
+        }
+        .btn-back-index:active { transform: translateY(4px); box-shadow: none; }
+        
+        /* Tombol Home di dalam Game (HUD) */
+        .btn-home-hud {
+            position: absolute; top: 15px; left: 15px;
+            background: #ff7675; color: white;
+            width: 50px; height: 50px; border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 1.5rem; cursor: pointer; border: 3px solid white;
+            box-shadow: 0 4px 0 #d63031; z-index: 20;
+        }
+        .btn-home-hud:active { transform: scale(0.9); box-shadow: none; }
+
         /* HUD AREA */
         #hud {
             position: absolute; top: 0; left: 0; width: 100%; height: 180px;
@@ -72,12 +94,14 @@
 <body>
 
     <div id="start-screen">
+        <a href="index.html" class="btn-back-index">⬅ KEMBALI</a>
         <h1 style="font-family: 'Fredoka One'; font-size: 4rem; margin: 0;">ALPHA TALK 🗣️</h1>
         <p style="font-size: 1.5rem;">Tangkap Huruf, Baca Kalimat!</p>
         <button class="btn-play" onclick="startGame()">MULAI BELAJAR ▶</button>
     </div>
 
     <div id="hud">
+        <div class="btn-home-hud" onclick="backToMenu()">🏠</div>
         <div id="sentence-context">KALIMAT: ...</div>
         <div id="word-target"></div>
         <div id="bottom-hud">
@@ -301,6 +325,21 @@
             }
         }
 
+        function backToMenu() {
+        state.isPlaying = false;
+        
+        // WAJIB: Matikan timer biar gak jalan terus
+        clearInterval(state.timerId);
+        
+        // Bersihkan huruf yang lagi terbang
+        state.letters = [];
+        
+        // Reset tampilan
+        document.getElementById('hud').style.display = 'none';
+        document.getElementById('start-screen').style.display = 'flex';
+        document.getElementById('toast').style.display = 'none'; // Sembunyiin notif kalau ada
+    }
+
         // --- DRAWING LOOP ---
         function onResults(results) {
             const canvas = document.getElementById('output_canvas');
@@ -392,4 +431,5 @@
         });
     </script>
 </body>
+
 </html>
