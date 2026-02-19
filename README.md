@@ -1,63 +1,46 @@
 # Kidara 🎓📚
 
-## 🇮🇩 Deskripsi (Bahasa Indonesia)
+**Kidara** adalah proyek web edukasi interaktif berbasis HTML yang berisi berbagai halaman pembelajaran dan permainan edukatif seperti huruf, angka, puzzle, dan visualisasi algoritma pengurutan.
 
-**Kidara** adalah proyek web edukasi interaktif berbasis HTML yang menyediakan berbagai halaman pembelajaran dan permainan edukatif, seperti huruf, angka, puzzle, serta visualisasi algoritma pengurutan (sorting).
-
-Proyek ini dibuat untuk tujuan **pembelajaran, eksplorasi, dan edukasi digital**, serta dapat digunakan sebagai referensi belajar pengembangan web sederhana.
-
-Repository ini dihosting di :contentReference[oaicite:0]{index=0}.
+Proyek ini dibuat untuk tujuan edukasi dan eksplorasi pembelajaran berbasis web.
 
 ---
 
-## 🇬🇧 Description (English)
+## 🧩 Struktur Proyek
 
-**Kidara** is an interactive educational web project built using HTML.  
-It contains multiple learning pages and educational games such as alphabets, numbers, puzzles, and sorting algorithm visualizations.
-
-This project is intended for **learning, educational exploration, and simple web development reference purposes**.
-
----
-
-## 🧩 Project Structure
-
-| File | Description |
-|------|------------|
-| `index.html` | Main homepage |
-| `english.html` | English learning page |
-| `huruf.html` | Alphabet learning page |
-| `math.html` | Math learning page |
-| `puzzle.html` | Educational puzzle game |
-| `sort.html` | Sorting algorithm visualization |
+| File | Deskripsi |
+|------|-----------|
+| `index.html` | Halaman utama |
+| `english.html` | Pembelajaran bahasa Inggris |
+| `huruf.html` | Pembelajaran alfabet |
+| `math.html` | Pembelajaran matematika |
+| `puzzle.html` | Game puzzle edukatif |
+| `sort.html` | Visualisasi algoritma sorting |
 
 ---
 
-## 🚀 Features
+## 🚀 Fitur
 
-- 🎓 Interactive educational web content  
-- 🧠 Logic & learning-based mini games  
-- 💻 Static HTML (no backend required)  
-- 📦 Easy to modify and extend  
+- 🎓 Media pembelajaran berbasis web
+- 🧠 Permainan edukatif interaktif
+- 💻 Berjalan tanpa backend (static HTML)
+- 📦 Mudah dikembangkan dan dimodifikasi
 
 ---
 
-## ▶️ How to Run
+## ▶️ Cara Menjalankan
 
-1. Clone the repository
+1. Clone repository
    ```bash
    git clone https://github.com/nabilagx/kidara.git
 ````
 
-2. Open `index.html` using a browser
-   or use **Live Server** in VS Code.
+2. Buka file `index.html` di browser
+   atau gunakan Live Server (VS Code).
 
 ---
 
-## 📌 License & Usage Rules
-
-## 📌 Lisensi & Aturan Penggunaan
-
-### 🇮🇩 Bahasa Indonesia
+## 📌 Aturan Penggunaan & Lisensi
 
 **Hak Cipta © 2026 – Nabila GX**
 
@@ -65,63 +48,36 @@ Proyek ini **BOLEH digunakan** untuk:
 
 * Pembelajaran pribadi
 * Referensi belajar
-* Penggunaan non-komersial
+* Pengembangan non-komersial
 
 Namun **DILARANG**:
 
-* ❌ Menjiplak seluruh atau sebagian kode lalu mengklaim sebagai karya sendiri
-* ❌ Menghapus atau mengganti identitas pembuat
-* ❌ Menggunakan untuk lomba, tugas akhir, atau produk komersial tanpa izin tertulis
-* ❌ Mengunggah ulang sebagai proyek milik pribadi
+* ❌ Menjiplak secara penuh maupun sebagian lalu mengklaim sebagai karya sendiri
+* ❌ Menghapus identitas pembuat
+* ❌ Menggunakan ulang untuk lomba, proyek akhir, atau komersial tanpa izin tertulis
+* ❌ Reupload ulang sebagai produk milik pribadi
 
 Jika menggunakan sebagian kode atau konsep:
 
 > ✔️ **WAJIB mencantumkan kredit ke repository ini**
 
----
-
-### 🇬🇧 English Version
-
-**Copyright © 2026 – Nabila GX**
-
-This project **MAY be used** for:
-
-* Personal learning
-* Educational reference
-* Non-commercial purposes
-
-However, it is **STRICTLY PROHIBITED** to:
-
-* ❌ Copy or plagiarize the code (fully or partially) and claim it as your own work
-* ❌ Remove or alter the author's identity
-* ❌ Use it for competitions, final projects, or commercial products without written permission
-* ❌ Reupload or redistribute as a personal project
-
-If you use any part of the code or concept:
-
-> ✔️ **Proper credit to this repository is REQUIRED**
-
-For special permissions or collaboration, please contact the repository owner.
+Untuk izin penggunaan khusus atau kolaborasi, silakan hubungi pemilik repository.
 
 ---
 
-## 🤝 Contribution
+## 🤝 Kontribusi
 
-Contributions are welcome through:
+Kontribusi diperbolehkan melalui:
 
-1. Forking this repository
-2. Creating a new branch
-3. Submitting a Pull Request with a clear description
+1. Fork repository
+2. Buat branch baru
+3. Pull Request dengan deskripsi yang jelas
 
 ---
-
-## ⭐ Closing Notes
 
 ## ⭐ Penutup
 
-Kidara was created as a digital learning medium.
-Please use it responsibly, respect intellectual work, and **do not plagiarize** 🙏
+Kidara dibuat sebagai media belajar dan eksplorasi edukasi digital.
+Gunakan dengan bijak, hargai karya, dan jangan menjiplak 🙏
 
-Happy learning & coding! 🚀
-
-````
+---
