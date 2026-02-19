@@ -54,6 +54,30 @@
 
         #lives { font-size: 2.5rem; letter-spacing: 5px; }
 
+        /* --- TAMBAHAN CSS TOMBOL BACK --- */
+
+        /* 1. Tombol Back ke Index (di Layar Start) */
+        .btn-back-index {
+            position: absolute;
+            top: 20px; left: 20px; /* Pojok kiri atas */
+            background: white; color: #00cec9;
+            border: none; padding: 10px 20px;
+            border-radius: 20px; font-family: 'Fredoka One';
+            font-size: 1.2rem; cursor: pointer;
+            box-shadow: 0 4px 0 #00b894;
+            text-decoration: none; /* Biar gak ada garis bawah kalau pake tag <a> */
+        }
+        .btn-back-index:active { transform: translateY(4px); box-shadow: none; }
+        
+        /* 2. Tombol Back ke Menu Utama (di HUD Game) */
+        #btn-back-menu {
+            background: #ff7675; border: 3px solid white; border-radius: 50%;
+            width: 60px; height: 60px; font-size: 30px; cursor: pointer;
+            display: flex; justify-content: center; align-items: center;
+            box-shadow: 0 5px 0 #d63031; transition: 0.2s;
+        }
+        #btn-back-menu:active { transform: scale(0.9); box-shadow: 0 2px 0 #d63031; }
+
         /* TOAST NOTIF */
         #toast {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
@@ -67,7 +91,9 @@
 <body>
 
     <div id="start-screen">
-        <h1 style="font-family: 'Fredoka One'; font-size: 4rem; margin: 0;">BELAJAR AR SERU</h1>
+    <a href="index.html" class="btn-back-index">⬅ KEMBALI</a>
+    
+    <h1 style="font-family: 'Fredoka One'; font-size: 4rem; margin: 0;">BELAJAR AR SERU</h1>
         <p style="font-size: 1.5rem;">Mode Unlimited & Suara Guru</p>
         <button class="btn-play" onclick="startGame()">MULAI MAIN ▶</button>
     </div>
@@ -78,6 +104,8 @@
             <span id="ui-desc">Loading...</span>
         </div>
         <div class="controls">
+            <div id="btn-back-menu" onclick="backToMenu()">🏠</div>
+        
             <div id="btn-music" onclick="toggleMusic()">🎵</div>
             <div id="lives">❤️❤️❤️</div>
         </div>
@@ -229,6 +257,21 @@
             state.isMusicMuted = !state.isMusicMuted;
             document.getElementById('btn-music').innerText = state.isMusicMuted ? "🔇" : "🎵";
             // Note: Tidak memanggil speak() disini, jadi suara guru aman.
+        }
+
+        // --- FUNGSI BACK TO MENU ---
+        function backToMenu() {
+            state.isPlaying = false; // Stop spawn item
+            state.items = []; // Kosongin item yg lagi terbang
+            state.heldItem = null; // Lepas item yg lagi dipegang
+            
+            // Reset tampilan
+            document.getElementById('start-screen').style.display = 'flex'; // Munculin menu awal
+            document.getElementById('hud').style.display = 'none'; // Sembunyiin HUD game
+            
+            // (Opsional) Reset level kalau mau pas main lagi mulai dari awal
+            // state.lvlIdx = 0; 
+            // state.lives = 3;
         }
 
         // --- SETUP ---
@@ -472,4 +515,5 @@
         }
     </script>
 </body>
+
 </html>
