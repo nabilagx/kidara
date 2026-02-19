@@ -44,6 +44,19 @@
         }
         .btn-icon:active { transform: scale(0.9); }
 
+        /* --- CSS TOMBOL KEMBALI --- */
+        .btn-back-index {
+            position: absolute;
+            top: 20px; left: 20px;
+            background: white; color: #0984e3; /* Sesuaikan warna tema biru */
+            border: none; padding: 10px 20px;
+            border-radius: 20px; font-family: 'Fredoka One';
+            font-size: 1.2rem; cursor: pointer;
+            box-shadow: 0 4px 0 #74b9ff;
+            text-decoration: none;
+        }
+        .btn-back-index:active { transform: translateY(4px); box-shadow: none; }
+
         /* AREA GAME */
         #game-area {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
@@ -90,12 +103,14 @@
 <body>
 
     <div id="start-screen">
+        <a href="index.html" class="btn-back-index">⬅ KEMBALI</a>
         <h1 style="font-size: 4rem; margin-bottom: 0;">SHAPE SPELL 🎨</h1>
         <p style="font-size: 1.5rem;">Tangkap Huruf Sesuai Urutan!</p>
         <button class="btn-play" onclick="startGame()">MULAI ▶</button>
     </div>
 
     <div id="music-control">
+        <div class="btn-icon" onclick="backToMenu()" style="margin-right: 15px;">🏠</div>
         <div class="btn-icon" id="btn-bgm" onclick="toggleMusic()" title="Musik Background">🎵</div>
     </div>
 
@@ -280,6 +295,24 @@
             });
         }
 
+        // --- FUNGSI BACK TO MENU (VERSI ENGLISH) ---
+        function backToMenu() {
+            state.isPlaying = false;
+            state.bubbles = [];     // Hapus semua bubble huruf
+            state.targetIdx = 0;    // Reset progress ejaan
+            
+            // Matikan Loop Musik Background
+            if (bgmInterval) clearInterval(bgmInterval);
+        
+            // Reset Tampilan
+            document.getElementById('start-screen').style.display = 'flex';
+            document.getElementById('game-area').style.display = 'none';
+            document.getElementById('celebration').style.display = 'none'; // Sembunyiin efek menang kalau ada
+            
+            // Reset Slot Huruf di layar
+            document.getElementById('slots').innerHTML = ""; 
+        }
+
         function checkBubble(b) {
             // STRICT ORDER CHECK
             if (b.idx === state.targetIdx) {
@@ -413,4 +446,5 @@
         });
     </script>
 </body>
+
 </html>
