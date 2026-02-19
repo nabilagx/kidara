@@ -48,6 +48,28 @@
 
         #loader { font-size: 1.2rem; margin-top: 10px; display: none; }
 
+        /* --- CSS TOMBOL BACK --- */
+        .btn-back-index {
+            position: absolute;
+            top: 20px; left: 20px;
+            background: white; color: #00cec9;
+            border: none; padding: 10px 20px;
+            border-radius: 20px; font-family: 'Fredoka One';
+            font-size: 1.2rem; cursor: pointer;
+            box-shadow: 0 4px 0 #00b894;
+            text-decoration: none;
+        }
+        .btn-back-index:active { transform: translateY(4px); box-shadow: none; }
+        
+        #btn-back-menu {
+            background: #ff7675; border: 3px solid white; border-radius: 50%;
+            width: 50px; height: 50px; font-size: 24px; cursor: pointer; /* Ukuran disesuaikan dikit biar muat */
+            display: flex; justify-content: center; align-items: center;
+            box-shadow: 0 5px 0 #d63031; transition: 0.2s;
+            margin-left: 20px; /* Jarak dari skor */
+        }
+        #btn-back-menu:active { transform: scale(0.9); box-shadow: 0 2px 0 #d63031; }
+
         /* TOAST MENANG */
         #toast {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
@@ -61,7 +83,8 @@
 </head>
 <body>
 
-    <div id="start-screen">
+   <div id="start-screen">
+    <a href="index.html" class="btn-back-index">⬅ KEMBALI</a>
         <h1 style="font-family: 'Fredoka One'; font-size: 4rem; margin: 0; text-shadow: 3px 3px 0 rgba(0,0,0,0.2);">PUZZLE MASTER</h1>
         <p style="font-size: 1.5rem; margin-top: 10px;">10 Level Edukatif Anak SD</p>
         <div id="loader">Sedang Menyiapkan Kamera...</div>
@@ -81,6 +104,7 @@
             <div class="info-title">REKOR 🏆</div>
             <div class="info-val" id="best-val">--:--</div>
         </div>
+        <div id="btn-back-menu" onclick="backToMenu()">🏠</div>
     </div>
 
     <div id="toast">HEBAT! 🎉</div>
@@ -271,6 +295,24 @@
             }
         }
 
+        // --- FUNGSI BACK TO MENU (VERSI PUZZLE) ---
+        function backToMenu() {
+            state.isPlaying = false;
+            state.pieces = [];      // Bedanya di sini (pieces)
+            state.heldPiece = null; // Bedanya di sini
+            
+            // PENTING: Matikan timer biar gak jalan di background
+            clearInterval(state.timerInterval); 
+            
+            // Reset tampilan
+            document.getElementById('start-screen').style.display = 'flex';
+            document.getElementById('hud').style.display = 'none';
+            
+            // Reset loading biar tombol start muncul lagi
+            document.getElementById('loader').style.display = 'none';
+            document.getElementById('btn-start').style.display = 'block';
+        }
+
         // --- RENDERING (DENGAN SKELETON) ---
         function onResults(results) {
             canvas.width = window.innerWidth; canvas.height = window.innerHeight;
@@ -357,4 +399,5 @@
         });
     </script>
 </body>
+
 </html>
