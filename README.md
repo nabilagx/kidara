@@ -65,16 +65,6 @@ Since this project uses the camera and MediaPipe, it requires a secure context (
     -   When the browser opens, click **Allow** when asked for camera permission.
     -   Stand back and show your hands to the camera! ✋
 
-## 📸 Screenshots
-
-| Puzzle Master | AR Matematika |
-|:---:|:---:|
-| *(Place screenshot here)* | *(Place screenshot here)* |
-
-| Shape Spell | Alpha Talk |
-|:---:|:---:|
-| *(Place screenshot here)* | *(Place screenshot here)* |
-
 ## 🤝 Contributing
 
 Contributions are welcome! If you have ideas for new games or improvements:
