@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎨 AR SHAPE SPELL</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700&display=swap" rel="stylesheet">
+
+    <style>
+        body { margin: 0; background: #81ecec; overflow: hidden; font-family: 'Fredoka One', cursive; }
+        canvas { position: absolute; width: 100%; height: 100%; }
+        video { display: none; }
+
+        /* UI START */
+        #start-screen {
+            position: fixed; inset: 0; background: #0984e3; z-index: 999;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            text-align: center; color: white;
+        }
+        .btn-play {
+            background: #ffeaa7; color: #d63031; border: 6px solid white; 
+            padding: 20px 60px; font-size: 2.5rem; border-radius: 60px;
+            cursor: pointer; margin-top: 30px; box-shadow: 0 10px 0 #e17055;
+            transition: transform 0.1s;
+        }
+        .btn-play:active { transform: translateY(5px); box-shadow: 0 5px 0 #e17055; }
+
+        /* TOMBOL MUSIK (POJOK KANAN ATAS) */
+        #music-control {
+            position: absolute; top: 20px; right: 20px; z-index: 20;
+            display: flex; gap: 10px;
+        }
+        .btn-icon {
+            background: white; border: 4px solid #00cec9; border-radius: 50%;
+            width: 70px; height: 70px; font-size: 2.5rem; cursor: pointer;
+            display: flex; justify-content: center; align-items: center;
+            box-shadow: 0 5px 0 rgba(0,0,0,0.2); transition: 0.2s;
+        }
+        .btn-icon:active { transform: scale(0.9); }
+
+        /* AREA GAME */
+        #game-area {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: none; flex-direction: column; align-items: center; z-index: 5;
+            pointer-events: none; 
+        }
+
+        .card {
+            margin-top: 50px; background: white; padding: 10px; border-radius: 30px;
+            box-shadow: 0 15px 0 rgba(0,0,0,0.1); border: 8px solid #fdcb6e;
+            transform: rotate(-2deg); transition: 0.5s;
+        }
+        .card img { width: 220px; height: 220px; border-radius: 20px; object-fit: cover; }
+
+        #slots {
+            display: flex; gap: 15px; margin-top: 30px;
+        }
+        .slot {
+            width: 70px; height: 70px; background: rgba(255,255,255,0.6);
+            border: 4px dashed #2d3436; border-radius: 20px;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 3rem; color: #2d3436; text-shadow: 2px 2px 0 white;
+            transition: 0.3s;
+        }
+        .slot.active {
+            border-color: #0984e3; background: rgba(255,255,255,0.9);
+            transform: scale(1.1); box-shadow: 0 0 20px #74b9ff;
+        }
+        .slot.filled {
+            background: #00b894; border-style: solid; border-color: white; color: white;
+            animation: popSlot 0.3s;
+        }
+        @keyframes popSlot { 0% {transform: scale(0.5);} 80% {transform: scale(1.2);} 100% {transform: scale(1);} }
+
+        /* CELEBRATION */
+        #celebration {
+            position: absolute; inset: 0; background: rgba(0,0,0,0.8);
+            display: none; flex-direction: column; justify-content: center; align-items: center;
+            color: white; z-index: 100;
+        }
+        #word-big { font-size: 7rem; margin: 0; text-shadow: 5px 5px 0 #fdcb6e; }
+    </style>
+</head>
+<body>
+
+    <div id="start-screen">
+        <h1 style="font-size: 4rem; margin-bottom: 0;">SHAPE SPELL 🎨</h1>
+        <p style="font-size: 1.5rem;">Tangkap Huruf Sesuai Urutan!</p>
+        <button class="btn-play" onclick="startGame()">MULAI ▶</button>
+    </div>
+
+    <div id="music-control">
+        <div class="btn-icon" id="btn-bgm" onclick="toggleMusic()" title="Musik Background">🎵</div>
+    </div>
+
+    <div id="game-area">
+        <div class="card">
+            <img id="target-img" src="" alt="Target">
+        </div>
+        <div id="slots"></div>
+    </div>
+
+    <div id="celebration">
+        <h1>HEBAT!</h1>
+        <h1 id="word-big">APPLE</h1>
+        <p style="font-size: 2rem;">🎉🎉🎉</p>
+    </div>
+
+    <video id="input_video"></video>
+    <canvas id="output_canvas"></canvas>
+
+    <script>
+        // --- DATABASE LEVEL (Huruf & Gambar) ---
+        const LEVELS = [
+            { word: "CAT", img: "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?q=80&w=600" },
+            { word: "DOG", img: "https://images.unsplash.com/photo-1587300003388-59208cc962cb?q=80&w=600" },
+            { word: "ANT", img: "https://images.unsplash.com/photo-1599383637683-113543666d6d?q=80&w=600" },
+            { word: "BIRD", img: "https://images.unsplash.com/photo-1444464666168-49d633b86797?q=80&w=600" },
+            { word: "LION", img: "https://images.unsplash.com/photo-1614027164847-1b28cfe1df60?q=80&w=600" },
+            { word: "FISH", img: "https://images.unsplash.com/photo-1524704654690-b56c05c78a00?q=80&w=600" }
+        ];
+
+        // Warna-warni Bubble Huruf
+        const COLORS = ["#ff7675", "#74b9ff", "#55efc4", "#a29bfe", "#fdcb6e", "#fab1a0"];
+
+        let state = {
+            lvlIdx: 0,
+            bubbles: [],
+            targetIdx: 0, 
+            handX: 0, handY: 0,
+            isPlaying: false,
+            musicOn: true // Default Musik Nyala
+        };
+
+        // --- AUDIO ENGINE ---
+        const actx = new (window.AudioContext || window.webkitAudioContext)();
+        let bgmInterval = null;
+
+        // 1. Musik Background (Bisa di-Mute)
+        function startMusic() {
+            let noteIdx = 0;
+            const melody = [261, 329, 392, 523, 392, 329]; // C Major Arpeggio
+            
+            if (bgmInterval) clearInterval(bgmInterval);
+            bgmInterval = setInterval(() => {
+                if(!state.musicOn) return; // Kalau dimute, skip bunyi
+                playTone(melody[noteIdx % melody.length], 'sine', 1.0, 0.05);
+                noteIdx++;
+            }, 800);
+        }
+
+        function playTone(freq, type, dur, vol) {
+            if (actx.state === 'suspended') actx.resume();
+            const osc = actx.createOscillator();
+            const gain = actx.createGain();
+            osc.connect(gain); gain.connect(actx.destination);
+            
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, actx.currentTime);
+            
+            gain.gain.setValueAtTime(vol || 0.1, actx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, actx.currentTime + dur);
+            
+            osc.start(); osc.stop(actx.currentTime + dur);
+        }
+
+        function toggleMusic() {
+            state.musicOn = !state.musicOn;
+            const btn = document.getElementById('btn-bgm');
+            btn.innerText = state.musicOn ? "🎵" : "🔇";
+            btn.style.background = state.musicOn ? "white" : "#b2bec3";
+        }
+
+        // 2. Suara Guru (TIDAK BISA DI-MUTE OLEH TOMBOL MUSIK)
+        function speak(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const msg = new SpeechSynthesisUtterance(text);
+                msg.lang = 'en-US';
+                msg.rate = 0.8; 
+                window.speechSynthesis.speak(msg);
+            }
+        }
+
+        function playSFX(type) {
+            // SFX juga tetap nyala biar interaksi terasa (bisa diubah logicnya kalau mau ikut mute)
+            if (type === 'correct') {
+                playTone(600, 'triangle', 0.1, 0.2); 
+                setTimeout(() => playTone(800, 'triangle', 0.2, 0.2), 100);
+            } else if (type === 'wrong') {
+                const osc = actx.createOscillator(); const gain = actx.createGain();
+                osc.connect(gain); gain.connect(actx.destination);
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, actx.currentTime);
+                osc.frequency.linearRampToValueAtTime(100, actx.currentTime + 0.3);
+                gain.gain.setValueAtTime(0.2, actx.currentTime);
+                gain.gain.linearRampToValueAtTime(0, actx.currentTime + 0.3);
+                osc.start(); osc.stop(actx.currentTime + 0.3);
+            }
+        }
+
+        // --- GAME LOGIC ---
+        function startGame() {
+            document.getElementById('start-screen').style.display = 'none';
+            document.getElementById('game-area').style.display = 'flex';
+            camera.start();
+            state.isPlaying = true;
+            startMusic();
+            loadLevel();
+        }
+
+        function loadLevel() {
+            document.getElementById('celebration').style.display = 'none';
+            const lvl = LEVELS[state.lvlIdx % LEVELS.length];
+            document.getElementById('target-img').src = lvl.img;
+            
+            state.targetIdx = 0;
+            state.bubbles = [];
+            
+            const slotCont = document.getElementById('slots');
+            slotCont.innerHTML = "";
+            for(let i=0; i<lvl.word.length; i++) {
+                let div = document.createElement('div');
+                div.className = "slot";
+                div.id = "slot-" + i;
+                if(i === 0) div.classList.add('active'); 
+                slotCont.appendChild(div);
+            }
+
+            const chars = lvl.word.split('');
+            let indices = chars.map((_, i) => i).sort(() => Math.random() - 0.5);
+            
+            indices.forEach(i => {
+                state.bubbles.push({
+                    char: chars[i],
+                    idx: i,
+                    // Posisi random
+                    x: 100 + Math.random() * (window.innerWidth - 200),
+                    y: window.innerHeight - 100 - Math.random() * 200,
+                    vx: (Math.random() - 0.5) * 2,
+                    vy: (Math.random() - 0.5) * 2,
+                    isCaught: false,
+                    scale: 1,
+                    shake: 0,
+                    color: COLORS[Math.floor(Math.random() * COLORS.length)]
+                });
+            });
+
+            setTimeout(() => speak("Spell " + lvl.word), 1000);
+        }
+
+        function updateGame() {
+            if(!state.isPlaying) return;
+            const W = window.innerWidth; const H = window.innerHeight;
+
+            state.bubbles.forEach(b => {
+                if(b.isCaught) return;
+
+                // Physics
+                b.x += b.vx; b.y += b.vy;
+                if(b.x < 50 || b.x > W-50) b.vx *= -1;
+                if(b.y < H/2 || b.y > H-50) b.vy *= -1;
+                b.vx *= 0.98; b.vy *= 0.98;
+                if(Math.abs(b.vx)<0.5) b.vx += (Math.random()-0.5);
+                if(Math.abs(b.vy)<0.5) b.vy += (Math.random()-0.5);
+
+                if(b.shake > 0) { b.shake--; }
+
+                // LOGIC SENTUH (Hover)
+                const dist = Math.hypot(state.handX - b.x, state.handY - b.y);
+                if (dist < 60 && b.shake <= 0) {
+                    checkBubble(b);
+                }
+            });
+        }
+
+        function checkBubble(b) {
+            // STRICT ORDER CHECK
+            if (b.idx === state.targetIdx) {
+                // BENAR
+                playSFX('correct');
+                speak(b.char); // Suara Guru: "E"
+                
+                b.isCaught = true;
+                const slot = document.getElementById('slot-' + state.targetIdx);
+                slot.innerText = b.char;
+                slot.classList.remove('active');
+                slot.classList.add('filled');
+                slot.style.backgroundColor = b.color; // Warna slot ngikut warna bubble
+
+                state.targetIdx++;
+                const nextSlot = document.getElementById('slot-' + state.targetIdx);
+                if(nextSlot) nextSlot.classList.add('active');
+
+                if (state.targetIdx >= state.bubbles.length) {
+                    setTimeout(levelComplete, 1000);
+                }
+            } else {
+                // SALAH (Salah urutan atau salah huruf)
+                playSFX('wrong'); // Suara 'Boing'
+                b.shake = 20;
+                
+                // Physics: MENTAL JAUH
+                let dx = b.x - state.handX;
+                let dy = b.y - state.handY;
+                let len = Math.hypot(dx, dy);
+                if(len > 0) {
+                    b.vx = (dx / len) * 15;
+                    b.vy = (dy / len) * 15;
+                }
+            }
+        }
+
+        function levelComplete() {
+            const lvl = LEVELS[state.lvlIdx % LEVELS.length];
+            document.getElementById('celebration').style.display = 'flex';
+            document.getElementById('word-big').innerText = lvl.word;
+            spellSlowly(lvl.word, 0);
+        }
+
+        function spellSlowly(word, idx) {
+            if (idx < word.length) {
+                speak(word[idx]); // Eja: "C"
+                setTimeout(() => spellSlowly(word, idx + 1), 1200); // Jeda 1.2 detik
+            } else {
+                setTimeout(() => {
+                    speak("Good Job! " + word); // Baca Full: "Cat"
+                    setTimeout(() => {
+                        state.lvlIdx++;
+                        loadLevel();
+                    }, 3000);
+                }, 1000);
+            }
+        }
+
+        // --- RENDER ---
+        function onResults(results) {
+            const canvas = document.getElementById('output_canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+            const W = canvas.width; const H = canvas.height;
+
+            // Mirror Logic
+            ctx.save(); ctx.translate(W, 0); ctx.scale(-1, 1);
+            ctx.drawImage(results.image, 0, 0, W, H);
+            
+            // Skeleton (Biar keliatan tangannya)
+            if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+                const lm = results.multiHandLandmarks[0];
+                drawConnectors(ctx, lm, HAND_CONNECTIONS, {color: 'rgba(255,255,255,0.5)', lineWidth: 4});
+                drawLandmarks(ctx, lm, {color: '#fdcb6e', lineWidth: 2, radius: 4});
+            }
+            ctx.restore();
+
+            // Hand Cursor Logic
+            if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+                const lm = results.multiHandLandmarks[0];
+                state.handX = (1 - lm[8].x) * W; 
+                state.handY = lm[8].y * H;
+                
+                // Cursor Visual
+                ctx.beginPath(); ctx.fillStyle = "#ffeaa7";
+                ctx.arc(state.handX, state.handY, 15, 0, Math.PI*2);
+                ctx.fill(); ctx.lineWidth=3; ctx.strokeStyle="white"; ctx.stroke();
+            }
+
+            if(state.isPlaying) {
+                updateGame();
+                drawBubbles(ctx);
+            }
+        }
+
+        function drawBubbles(ctx) {
+            ctx.textAlign = "center"; ctx.textBaseline = "middle";
+            ctx.font = "bold 50px 'Fredoka One'";
+            
+            state.bubbles.forEach(b => {
+                if(b.isCaught) return;
+
+                let x = b.x; 
+                if(b.shake > 0) x += (Math.random()-0.5) * 10;
+
+                ctx.save(); ctx.translate(x, b.y);
+                
+                // Draw Bubble (Lingkaran Warna)
+                ctx.beginPath(); ctx.arc(0, 0, 45, 0, Math.PI*2);
+                ctx.fillStyle = b.color; ctx.fill();
+                ctx.strokeStyle = "white"; ctx.lineWidth = 5; ctx.stroke();
+                
+                // Draw Text (Huruf Saja)
+                ctx.fillStyle = "white"; 
+                ctx.shadowColor = "rgba(0,0,0,0.3)"; ctx.shadowBlur = 5;
+                ctx.fillText(b.char, 0, 5);
+                
+                ctx.restore();
+            });
+        }
+
+        const video = document.getElementById('input_video');
+        const hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
+        hands.setOptions({ maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.7, minTrackingConfidence: 0.7 });
+        hands.onResults(onResults);
+
+        const camera = new Camera(video, {
+            onFrame: async () => { await hands.send({image: video}); },
+            width: 1280, height: 720
+        });
+    </script>
+</body>
+</html>

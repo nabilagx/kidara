@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🇮🇩 AR PINTAR: UNLIMITED EDITION</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700&display=swap" rel="stylesheet">
+
+    <style>
+        body { margin: 0; background: #ffeaa7; overflow: hidden; font-family: 'Nunito', sans-serif; }
+        canvas { position: absolute; width: 100%; height: 100%; }
+        video { display: none; }
+
+        /* START SCREEN */
+        #start-screen {
+            position: fixed; inset: 0; background: #00cec9; z-index: 999;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            text-align: center; color: white;
+        }
+        .btn-play {
+            background: #fdcb6e; color: #d63031; border: 4px solid white; 
+            padding: 20px 60px; font-size: 2rem; border-radius: 50px; font-family: 'Fredoka One';
+            cursor: pointer; margin-top: 30px; transition: 0.2s;
+        }
+        .btn-play:active { transform: scale(0.95); }
+
+        /* HUD ATAS */
+        #hud {
+            position: absolute; top: 0; left: 0; width: 100%; height: 120px;
+            background: rgba(255,255,255,0.95); border-bottom: 5px solid #fdcb6e;
+            display: none; justify-content: space-between; align-items: center;
+            padding: 0 30px; box-sizing: border-box; z-index: 10;
+        }
+
+        .lvl-info h2 { font-family: 'Fredoka One'; color: #0984e3; font-size: 2rem; margin: 0; }
+        .lvl-info span { font-size: 1.2rem; color: #636e72; }
+        
+        /* KONTROL KANAN ATAS */
+        .controls { display: flex; align-items: center; gap: 20px; }
+        
+        #btn-music {
+            background: #fab1a0; border: 3px solid white; border-radius: 50%;
+            width: 60px; height: 60px; font-size: 30px; cursor: pointer;
+            display: flex; justify-content: center; align-items: center;
+            box-shadow: 0 5px 0 #e17055; transition: 0.2s;
+        }
+        #btn-music:active { transform: scale(0.9); }
+
+        #lives { font-size: 2.5rem; letter-spacing: 5px; }
+
+        /* TOAST NOTIF */
+        #toast {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: white; color: #2d3436; padding: 30px 50px;
+            border-radius: 30px; font-size: 3rem; font-family: 'Fredoka One';
+            display: none; z-index: 100; text-align: center; border: 8px solid #0984e3;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="start-screen">
+        <h1 style="font-family: 'Fredoka One'; font-size: 4rem; margin: 0;">BELAJAR AR SERU</h1>
+        <p style="font-size: 1.5rem;">Mode Unlimited & Suara Guru</p>
+        <button class="btn-play" onclick="startGame()">MULAI MAIN ▶</button>
+    </div>
+
+    <div id="hud">
+        <div class="lvl-info">
+            <h2 id="ui-title">LEVEL 1</h2>
+            <span id="ui-desc">Loading...</span>
+        </div>
+        <div class="controls">
+            <div id="btn-music" onclick="toggleMusic()">🎵</div>
+            <div id="lives">❤️❤️❤️</div>
+        </div>
+    </div>
+
+    <div id="toast">BENAR! 🎉</div>
+
+    <video id="input_video"></video>
+    <canvas id="output_canvas"></canvas>
+
+    <script>
+        // --- DATABASE LEVEL JUMBO (10 TEMA) ---
+        // Nanti bakal di-looping biar unlimited
+        const TARGET = 5;
+        const LEVELS = [
+            {
+                title: "ALAM vs KOTA", desc: "Pisahkan Benda Alam & Kota",
+                left: { label: "ALAM", icon: "🌳", color: "#2ecc71", items: [{name:"Pohon", emoji:"🌳"},{name:"Bunga", emoji:"🌻"},{name:"Kupu-kupu", emoji:"🦋"},{name:"Jamur", emoji:"🍄"},{name:"Daun", emoji:"🍃"}] },
+                right: { label: "KOTA", icon: "🏢", color: "#3498db", items: [{name:"Gedung", emoji:"🏢"},{name:"Mobil", emoji:"🚗"},{name:"Bis", emoji:"🚌"},{name:"Lampu", emoji:"💡"},{name:"Uang", emoji:"💵"}] }
+            },
+            {
+                title: "MAKANAN", desc: "Sehat vs Manis",
+                left: { label: "SEHAT", icon: "🥦", color: "#27ae60", items: [{name:"Brokoli", emoji:"🥦"},{name:"Wortel", emoji:"🥕"},{name:"Pisang", emoji:"🍌"},{name:"Apel", emoji:"🍎"},{name:"Telur", emoji:"🥚"}] },
+                right: { label: "MANIS", icon: "🍭", color: "#e84393", items: [{name:"Permen", emoji:"🍭"},{name:"Donat", emoji:"🍩"},{name:"Es Krim", emoji:"🍦"},{name:"Kue", emoji:"🍰"},{name:"Coklat", emoji:"🍫"}] }
+            },
+            {
+                title: "FISIKA", desc: "Benda Padat vs Cair",
+                left: { label: "PADAT", icon: "🧱", color: "#e67e22", items: [{name:"Batu", emoji:"🪨"},{name:"Kayu", emoji:"🪵"},{name:"Palu", emoji:"🔨"},{name:"Buku", emoji:"📘"},{name:"Bola", emoji:"⚽"}] },
+                right: { label: "CAIR", icon: "💧", color: "#00cec9", items: [{name:"Air", emoji:"💧"},{name:"Susu", emoji:"🥛"},{name:"Jus", emoji:"🧃"},{name:"Madu", emoji:"🍯"},{name:"Sup", emoji:"🥣"}] }
+            },
+            {
+                title: "TRANSPORTASI", desc: "Darat vs Udara",
+                left: { label: "DARAT", icon: "🚗", color: "#8e44ad", items: [{name:"Mobil", emoji:"🚗"},{name:"Bis", emoji:"🚌"},{name:"Truk", emoji:"🚚"},{name:"Motor", emoji:"🛵"},{name:"Sepeda", emoji:"🚲"}] },
+                right: { label: "UDARA", icon: "✈️", color: "#2980b9", items: [{name:"Pesawat", emoji:"✈️"},{name:"Helikopter", emoji:"🚁"},{name:"Roket", emoji:"🚀"},{name:"Balon Udara", emoji:"🎈"},{name:"Jet", emoji:"🛩️"}] }
+            },
+            {
+                title: "HEWAN", desc: "Kaki Dua vs Kaki Empat",
+                left: { label: "KAKI 2", icon: "🐓", color: "#f1c40f", items: [{name:"Ayam", emoji:"🐓"},{name:"Bebek", emoji:"🦆"},{name:"Burung", emoji:"🐦"},{name:"Penguin", emoji:"🐧"},{name:"Angsa", emoji:"🦢"}] },
+                right: { label: "KAKI 4", icon: "🐅", color: "#d35400", items: [{name:"Harimau", emoji:"🐅"},{name:"Sapi", emoji:"🐄"},{name:"Kucing", emoji:"🐈"},{name:"Kuda", emoji:"🐎"},{name:"Gajah", emoji:"🐘"}] }
+            },
+            {
+                title: "SUHU", desc: "Panas vs Dingin",
+                left: { label: "PANAS", icon: "🔥", color: "#e74c3c", items: [{name:"Api", emoji:"🔥"},{name:"Matahari", emoji:"☀️"},{name:"Kopi Panas", emoji:"☕"},{name:"Lahar", emoji:"🌋"},{name:"Cabai", emoji:"🌶️"}] },
+                right: { label: "DINGIN", icon: "🧊", color: "#74b9ff", items: [{name:"Es Batu", emoji:"🧊"},{name:"Salju", emoji:"❄️"},{name:"Es Krim", emoji:"🍦"},{name:"Boneka Salju", emoji:"⛄"},{name:"Angin", emoji:"💨"}] }
+            },
+            {
+                title: "ANGKASA", desc: "Siang vs Malam",
+                left: { label: "SIANG", icon: "☀️", color: "#f39c12", items: [{name:"Matahari", emoji:"☀️"},{name:"Awan", emoji:"☁️"},{name:"Pelangi", emoji:"🌈"},{name:"Layangan", emoji:"🪁"},{name:"Topi", emoji:"🧢"}] },
+                right: { label: "MALAM", icon: "🌙", color: "#2c3e50", items: [{name:"Bulan", emoji:"🌙"},{name:"Bintang", emoji:"⭐"},{name:"Hantu", emoji:"👻"},{name:"Kelelawar", emoji:"🦇"},{name:"Lampu Tidur", emoji:"🪔"}] }
+            },
+            {
+                title: "WARNA", desc: "Merah vs Biru",
+                left: { label: "MERAH", icon: "🔴", color: "#c0392b", items: [{name:"Apel", emoji:"🍎"},{name:"Mobil Merah", emoji:"🚗"},{name:"Hati", emoji:"❤️"},{name:"Mawar", emoji:"🌹"},{name:"Stroberi", emoji:"🍓"}] },
+                right: { label: "BIRU", icon: "🔵", color: "#2980b9", items: [{name:"Berlian", emoji:"💎"},{name:"Buku Biru", emoji:"📘"},{name:"Ikan", emoji:"🐟"},{name:"Jeans", emoji:"👖"},{name:"Payung", emoji:"☂️"}] }
+            },
+            {
+                title: "MATEMATIKA", desc: "Ganjil vs Genap",
+                left: { label: "GANJIL", icon: "1️⃣", color: "#16a085", items: [{name:"Satu", emoji:"1️⃣"},{name:"Tiga", emoji:"3️⃣"},{name:"Lima", emoji:"5️⃣"},{name:"Tujuh", emoji:"7️⃣"},{name:"Sembilan", emoji:"9️⃣"}] },
+                right: { label: "GENAP", icon: "2️⃣", color: "#8e44ad", items: [{name:"Dua", emoji:"2️⃣"},{name:"Empat", emoji:"4️⃣"},{name:"Enam", emoji:"6️⃣"},{name:"Delapan", emoji:"8️⃣"},{name:"Sepuluh", emoji:"🔟"}] }
+            },
+            {
+                title: "EMOSI", desc: "Senang vs Sedih",
+                left: { label: "SENANG", icon: "😄", color: "#f1c40f", items: [{name:"Senyum", emoji:"😄"},{name:"Ketawa", emoji:"😆"},{name:"Cinta", emoji:"🥰"},{name:"Keren", emoji:"😎"},{name:"Pesta", emoji:"🥳"}] },
+                right: { label: "SEDIH", icon: "😢", color: "#95a5a6", items: [{name:"Nangis", emoji:"😢"},{name:"Sakit", emoji:"🤒"},{name:"Tidur", emoji:"😴"},{name:"Bingung", emoji:"😕"},{name:"Takut", emoji:"😱"}] }
+            }
+        ];
+
+        let state = { 
+            lvlIdx: 0, 
+            lives: 3, 
+            leftFill: 0, rightFill: 0, 
+            items: [], heldItem: null, 
+            handX: 0, handY: 0, isPinching: false, 
+            isPlaying: false,
+            isMusicMuted: false, // Status Mute Musik
+            speedMultiplier: 1.0 // Buat level makin susah
+        };
+
+        // --- SISTEM SUARA (VOICE & MUSIC) ---
+        let voiceIndo = null;
+        
+        function checkVoice() {
+            const voices = window.speechSynthesis.getVoices();
+            voiceIndo = voices.find(v => v.lang.includes("id") || v.name.includes("Indonesia"));
+        }
+        window.speechSynthesis.onvoiceschanged = checkVoice;
+
+        function speak(text) {
+            // Suara Guru TIDAK BOLEH di-mute oleh tombol musik
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const msg = new SpeechSynthesisUtterance(text);
+                if (voiceIndo) msg.voice = voiceIndo;
+                msg.lang = 'id-ID';
+                msg.rate = 1.0; 
+                window.speechSynthesis.speak(msg);
+            }
+        }
+
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        const actx = new AudioContext();
+        let nextNoteTime = 0;
+        let noteIndex = 0;
+        const melody = [261.63, 329.63, 392.00, 523.25, 392.00, 329.63]; 
+
+        function scheduler() {
+            // Cek apakah musik di-mute?
+            if (!state.isMusicMuted && nextNoteTime < actx.currentTime + 0.1) {
+                playNote(melody[noteIndex % melody.length], nextNoteTime);
+                nextNoteTime += 0.5;
+                noteIndex++;
+            }
+            if(state.isPlaying) window.setTimeout(scheduler, 50);
+        }
+
+        function playNote(freq, time) {
+            const osc = actx.createOscillator();
+            const gain = actx.createGain();
+            osc.connect(gain); gain.connect(actx.destination);
+            osc.type = 'sine'; osc.frequency.value = freq;
+            gain.gain.setValueAtTime(0.05, time); 
+            gain.gain.exponentialRampToValueAtTime(0.001, time + 0.5);
+            osc.start(time); osc.stop(time + 0.5);
+        }
+
+        function playSFX(type) {
+            // SFX (Efek Suara) ikut ke-mute kalau musik dimatiin? 
+            // Biasanya SFX tetep nyala, tapi kalau mau dimatiin juga, tambahin cek state.isMusicMuted
+            const osc = actx.createOscillator();
+            const gain = actx.createGain();
+            osc.connect(gain); gain.connect(actx.destination);
+            const now = actx.currentTime;
+            
+            if (type === 'correct') { 
+                osc.type = 'triangle'; osc.frequency.setValueAtTime(600, now); 
+                osc.frequency.exponentialRampToValueAtTime(1200, now + 0.1); 
+                gain.gain.setValueAtTime(0.3, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+            } else if (type === 'wrong') { 
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, now); 
+                osc.frequency.linearRampToValueAtTime(100, now + 0.2); 
+                gain.gain.setValueAtTime(0.3, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+            } else if (type === 'pop') { 
+                osc.frequency.setValueAtTime(400, now); gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+            }
+            osc.start(now); osc.stop(now + 0.5);
+        }
+
+        function toggleMusic() {
+            state.isMusicMuted = !state.isMusicMuted;
+            document.getElementById('btn-music').innerText = state.isMusicMuted ? "🔇" : "🎵";
+            // Note: Tidak memanggil speak() disini, jadi suara guru aman.
+        }
+
+        // --- SETUP ---
+        const video = document.getElementById('input_video');
+        const canvas = document.getElementById('output_canvas');
+        const ctx = canvas.getContext('2d');
+        const hud = document.getElementById('hud');
+        
+        const hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
+        hands.setOptions({ maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.7, minTrackingConfidence: 0.7 });
+        hands.onResults(onResults);
+
+        const camera = new Camera(video, {
+            onFrame: async () => { await hands.send({image: video}); },
+            width: 1280, height: 720
+        });
+
+        function startGame() {
+            if (actx.state === 'suspended') actx.resume();
+            checkVoice();
+            document.getElementById('start-screen').style.display = 'none';
+            hud.style.display = 'flex';
+            camera.start();
+            state.isPlaying = true;
+            updateUI();
+            spawnLoop();
+            
+            // Start Music Loop
+            nextNoteTime = actx.currentTime + 0.1;
+            scheduler();
+            
+            speak("Halo! Ayo kita mulai belajarnya!");
+        }
+
+        // --- GAME LOOP ---
+        function spawnLoop() {
+            if (state.isPlaying) spawnItem();
+            // Spawn makin cepet kalau level makin tinggi
+            const spawnRate = Math.max(800, 2000 - (state.lvlIdx * 100)); 
+            setTimeout(spawnLoop, spawnRate);
+        }
+
+        function spawnItem() {
+            if (state.items.length >= 6) return;
+            const lvl = LEVELS[state.lvlIdx % LEVELS.length]; // Modulo biar looping kalau level > 10
+            
+            let possible = [];
+            if (state.leftFill < TARGET) possible.push('left');
+            if (state.rightFill < TARGET) possible.push('right');
+            if (possible.length === 0) return;
+
+            const side = possible[Math.floor(Math.random() * possible.length)];
+            const pool = side === 'left' ? lvl.left.items : lvl.right.items;
+            const data = pool[Math.floor(Math.random() * pool.length)];
+            const W = canvas.width;
+
+            state.items.push({
+                name: data.name, 
+                emoji: data.emoji,
+                side: side,
+                x: Math.random() * (W - 200) + 100,
+                y: -100,
+                // Speed nambah tiap kali loop database
+                speed: (1.5 + (state.speedMultiplier * 0.2)) * state.speedMultiplier,
+                spoken: false
+            });
+        }
+
+        function handleGameLogic(W, H) {
+            // GRAB
+            if (state.isPinching && !state.heldItem) {
+                let closest = null; let minD = 80;
+                state.items.forEach(item => {
+                    const d = Math.hypot(state.handX - item.x, state.handY - item.y);
+                    if (d < minD) { minD = d; closest = item; }
+                });
+                if (closest) {
+                    state.heldItem = closest;
+                    playSFX('pop');
+                    if (!closest.spoken) { speak(closest.name); closest.spoken = true; }
+                }
+            }
+            // DROP
+            if (!state.isPinching && state.heldItem) {
+                checkBin(state.heldItem, W, H);
+                state.heldItem = null;
+            }
+            // MOVE
+            for (let i = state.items.length - 1; i >= 0; i--) {
+                let item = state.items[i];
+                if (item === state.heldItem) {
+                    item.x = state.handX; item.y = state.handY;
+                } else {
+                    item.y += item.speed;
+                    // Jatuh = Hilang (No Penalty)
+                    if (item.y > H + 100) state.items.splice(i, 1);
+                }
+            }
+        }
+
+        function checkBin(item, W, H) {
+            const dropY = H - 300;
+            const inLeft = item.x < 350 && item.y > dropY;
+            const inRight = item.x > W - 350 && item.y > dropY;
+            let targetSide = null;
+            if (inLeft) targetSide = 'left'; 
+            if (inRight) targetSide = 'right';
+
+            if (!targetSide) return;
+
+            if (targetSide === item.side) {
+                playSFX('correct'); speak("Benar!"); showToast("BENAR! 🌟", "#2ecc71");
+                
+                if (targetSide === 'left' && state.leftFill < TARGET) state.leftFill++;
+                else if (targetSide === 'right' && state.rightFill < TARGET) state.rightFill++;
+                else { bounceItem(item, W, H); return; }
+
+                state.items = state.items.filter(i => i !== item);
+                if (state.leftFill >= TARGET && state.rightFill >= TARGET) nextLevel();
+            } else {
+                playSFX('wrong'); speak("Salah tempat!"); showToast("SALAH! ❌", "#d63031");
+                state.items = state.items.filter(i => i !== item);
+                state.lives--; updateUI();
+                if (state.lives <= 0) gameOver();
+            }
+        }
+
+        function bounceItem(item, W, H) { item.y = H/2; item.x = W/2; speak("Penuh!"); }
+        
+        function showToast(text, color) {
+            const t = document.getElementById('toast'); t.innerText = text; t.style.borderColor = color || "#0984e3";
+            t.style.display = 'block'; setTimeout(() => t.style.display = 'none', 1500);
+        }
+
+        function updateUI() {
+            const lvl = LEVELS[state.lvlIdx % LEVELS.length];
+            document.getElementById('ui-title').innerText = lvl.title;
+            document.getElementById('ui-desc').innerText = lvl.desc;
+            let s = ""; for(let i=0; i<state.lives; i++) s+="❤️";
+            document.getElementById('lives').innerHTML = s;
+        }
+
+        function nextLevel() {
+            state.lvlIdx++;
+            // LOGIC UNLIMITED: Kalau index lebih besar dari jumlah level,
+            // dia bakal loop balik ke 0 (karena pake Modulo %)
+            // TAPI speed multiplier ditambah biar makin cepet/susah.
+            if (state.lvlIdx % LEVELS.length === 0) {
+                state.speedMultiplier += 0.5; // Level makin susah
+                showToast("SPEED UP! 🔥");
+            } else {
+                showToast("LEVEL NAIK! 🚀");
+            }
+            
+            const nextLvl = LEVELS[state.lvlIdx % LEVELS.length];
+            speak("Lanjut. " + nextLvl.title);
+            
+            state.leftFill = 0; state.rightFill = 0; state.items = []; state.heldItem = null;
+            updateUI();
+        }
+
+        function gameOver() {
+            showToast("GAME OVER"); speak("Yah, coba lagi yuk!");
+            state.lvlIdx = 0; state.lives = 3; state.speedMultiplier = 1.0;
+            state.leftFill = 0; state.rightFill = 0; state.items = [];
+            updateUI();
+        }
+
+        // --- DRAWING ---
+        function onResults(results) {
+            canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+            const W = canvas.width; const H = canvas.height;
+            ctx.save(); ctx.translate(W, 0); ctx.scale(-1, 1); ctx.drawImage(results.image, 0, 0, W, H); ctx.restore();
+
+            if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+                const lm = results.multiHandLandmarks[0];
+                const ix = W - (lm[8].x * W); const iy = lm[8].y * H;
+                const tx = W - (lm[4].x * W); const ty = lm[4].y * H;
+                state.handX += (ix - state.handX) * 0.4; state.handY += (iy - state.handY) * 0.4;
+                const dist = Math.hypot(ix - tx, iy - ty);
+                
+                if (!state.isPinching && dist < 50) state.isPinching = true;
+                else if (state.isPinching && dist > 80) state.isPinching = false;
+
+                drawHand(ctx, lm, W, H, state.isPinching);
+                if (state.isPlaying) handleGameLogic(W, H);
+            }
+            if (state.isPlaying) { drawBaskets(ctx, W, H); drawItems(ctx); }
+        }
+
+        function drawHand(ctx, lm, W, H, isGrabbing) {
+            ctx.save(); ctx.lineJoin="round"; ctx.lineCap="round"; ctx.lineWidth=8;
+            ctx.strokeStyle = isGrabbing ? "#ff9f43" : "#00cec9";
+            const bones = [[0,1],[1,2],[2,3],[3,4], [0,5],[5,6],[6,7],[7,8], [5,9],[9,10],[10,11],[11,12], [9,13],[13,14],[14,15],[15,16], [13,17],[17,18],[18,19],[19,20], [0,17]];
+            ctx.beginPath();
+            bones.forEach(b => {
+                const p1 = lm[b[0]]; const p2 = lm[b[1]];
+                ctx.moveTo(W - p1.x * W, p1.y * H); ctx.lineTo(W - p2.x * W, p2.y * H);
+            });
+            ctx.stroke();
+            ctx.fillStyle = "white"; ctx.beginPath(); ctx.arc(state.handX, state.handY, 15, 0, Math.PI*2); ctx.fill();
+            ctx.restore();
+        }
+
+        function drawItems(ctx) {
+            ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.font="70px Arial";
+            state.items.forEach(item => {
+                ctx.save(); ctx.translate(item.x, item.y);
+                ctx.fillStyle="white"; ctx.beginPath(); ctx.arc(0,0,50,0,Math.PI*2); ctx.fill();
+                ctx.strokeStyle="#2d3436"; ctx.lineWidth=3; ctx.stroke();
+                
+                const txt = item.emoji ? item.emoji : "❓";
+                ctx.fillStyle="black"; ctx.fillText(txt, 0, 5);
+
+                if (item === state.heldItem) { ctx.strokeStyle="#ff9f43"; ctx.lineWidth=8; ctx.stroke(); }
+                ctx.restore();
+            });
+        }
+
+        function drawBaskets(ctx, W, H) {
+            const lvl = LEVELS[state.lvlIdx % LEVELS.length];
+            drawOneBasket(ctx, 20, H-280, lvl.left, state.leftFill);
+            drawOneBasket(ctx, W-320, H-280, lvl.right, state.rightFill);
+        }
+
+        function drawOneBasket(ctx, x, y, data, count) {
+            const w=300; const h=250; ctx.save();
+            ctx.fillStyle="rgba(255,255,255,0.9)"; ctx.strokeStyle=data.color; ctx.lineWidth=6;
+            ctx.beginPath(); ctx.roundRect(x,y,w,h,20); ctx.fill(); ctx.stroke();
+            
+            ctx.fillStyle=data.color; ctx.textAlign="center";
+            ctx.font="80px Arial"; ctx.fillText(data.icon, x+w/2, y+90);
+            ctx.font="bold 28px 'Fredoka One'"; ctx.fillText(data.label, x+w/2, y+160);
+            
+            const dot=30; const gap=10; const startX = x + (w - (TARGET*(dot+gap)-gap))/2 + dot/2;
+            for(let i=0; i<TARGET; i++) {
+                ctx.beginPath(); ctx.arc(startX+i*(dot+gap), y+215, dot/2, 0, Math.PI*2);
+                if(i < count) { ctx.fillStyle=data.color; ctx.fill(); }
+                else { ctx.strokeStyle="#ccc"; ctx.lineWidth=2; ctx.stroke(); }
+            } ctx.restore();
+        }
+    </script>
+</body>
+</html>

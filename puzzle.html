@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧩 PUZZLE MASTER AR (10 LEVEL)</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700&display=swap" rel="stylesheet">
+
+    <style>
+        body { margin: 0; background: #ffeaa7; overflow: hidden; font-family: 'Nunito', sans-serif; }
+        canvas { position: absolute; width: 100%; height: 100%; }
+        video { display: none; }
+
+        /* UI/HUD */
+        #hud {
+            position: absolute; top: 0; left: 0; width: 100%; height: 130px;
+            background: rgba(255,255,255,0.95); border-bottom: 5px solid #fdcb6e;
+            display: none; justify-content: space-between; align-items: center;
+            padding: 0 40px; box-sizing: border-box; z-index: 10;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .info-box { text-align: center; }
+        .info-title { font-size: 0.9rem; color: #b2bec3; font-weight: bold; margin-bottom: 5px; }
+        .info-val { font-family: 'Fredoka One'; font-size: 1.5rem; color: #2d3436; text-transform: uppercase; }
+        #timer-val { color: #0984e3; font-size: 2rem; }
+        #best-val { color: #fdcb6e; text-shadow: 1px 1px 0 #e17055; }
+        #lvl-name-disp { color: #6c5ce7; font-size: 1.8rem; }
+
+        /* START SCREEN */
+        #start-screen {
+            position: fixed; inset: 0; background: #00cec9; z-index: 999;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            text-align: center; color: white;
+        }
+        .btn-play {
+            background: #fdcb6e; color: #d63031; border: 4px solid white; 
+            padding: 20px 60px; font-size: 2rem; border-radius: 50px; font-family: 'Fredoka One';
+            cursor: pointer; margin-top: 30px; transition: 0.2s; box-shadow: 0 10px 0 #e17055;
+        }
+        .btn-play:active { transform: translateY(5px); box-shadow: 0 5px 0 #e17055; }
+
+        #loader { font-size: 1.2rem; margin-top: 10px; display: none; }
+
+        /* TOAST MENANG */
+        #toast {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: #00b894; color: white; padding: 30px 60px;
+            border-radius: 30px; font-size: 3rem; font-family: 'Fredoka One';
+            display: none; z-index: 100; text-align: center; border: 8px solid white;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3); animation: pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes pop { from {transform: translate(-50%, -50%) scale(0.5);} to {transform: translate(-50%, -50%) scale(1);} }
+    </style>
+</head>
+<body>
+
+    <div id="start-screen">
+        <h1 style="font-family: 'Fredoka One'; font-size: 4rem; margin: 0; text-shadow: 3px 3px 0 rgba(0,0,0,0.2);">PUZZLE MASTER</h1>
+        <p style="font-size: 1.5rem; margin-top: 10px;">10 Level Edukatif Anak SD</p>
+        <div id="loader">Sedang Menyiapkan Kamera...</div>
+        <button class="btn-play" id="btn-start" onclick="startGame()">MULAI MAIN ▶</button>
+    </div>
+
+    <div id="hud">
+        <div class="info-box" style="text-align: left;">
+            <div class="info-title">LEVEL & TEMA</div>
+            <div class="info-val"><span id="lvl-num">1</span>. <span id="lvl-name-disp">...</span></div>
+        </div>
+        <div class="info-box">
+            <div class="info-title">WAKTU</div>
+            <div class="info-val" id="timer-val">00:00</div>
+        </div>
+        <div class="info-box">
+            <div class="info-title">REKOR 🏆</div>
+            <div class="info-val" id="best-val">--:--</div>
+        </div>
+    </div>
+
+    <div id="toast">HEBAT! 🎉</div>
+
+    <video id="input_video"></video>
+    <canvas id="output_canvas"></canvas>
+
+    <script>
+        // --- 10 GAMBAR EDUKATIF (UNLIMITED LOOP) ---
+        const LEVELS = [
+            { src: "https://images.unsplash.com/photo-1546182990-dffeafbe841d?q=80&w=800", name: "SINGA 🦁" },
+            { src: "https://images.unsplash.com/photo-1557800636-894a64c1696f?q=80&w=800", name: "JERUK 🍊" },
+            { src: "https://images.unsplash.com/photo-1513542789411-b6a5d4f31634?q=80&w=800", name: "ASTRONOT 🚀" },
+            { src: "https://images.unsplash.com/photo-1444464666168-49d633b86797?q=80&w=800", name: "BURUNG 🦜" },
+            { src: "https://images.unsplash.com/photo-1582053433976-25c00369fc93?q=80&w=800", name: "KUE DONAT 🍩" },
+            { src: "https://images.unsplash.com/photo-1501686637657-884f5c7d1b85?q=80&w=800", name: "DINO 🦖" },
+            { src: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=800", name: "GUNUNG 🗻" },
+            { src: "https://images.unsplash.com/photo-1557925923-cd4648e211a0?q=80&w=800", name: "MOBIL 🚗" },
+            { src: "https://images.unsplash.com/photo-1596727147705-54a9d0b0317d?q=80&w=800", name: "KUCING 🐱" },
+            { src: "https://images.unsplash.com/photo-1518837695005-2083093ee35b?q=80&w=800", name: "LAUT 🌊" }
+        ];
+
+        let state = { 
+            lvlIdx: 0, grid: 2, 
+            pieces: [], heldPiece: null, imgObj: null,
+            handX: 0, handY: 0, isPinching: false, isPlaying: false,
+            startTime: 0, timerInterval: null,
+            board: {x:0, y:0, size:0}
+        };
+
+        const video = document.getElementById('input_video');
+        const canvas = document.getElementById('output_canvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- AUDIO ENGINE ---
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        const actx = new AudioContext();
+
+        function playSound(type) {
+            if (actx.state === 'suspended') actx.resume();
+            const osc = actx.createOscillator(); const gain = actx.createGain();
+            osc.connect(gain); gain.connect(actx.destination);
+            const now = actx.currentTime;
+
+            if (type === 'grab') { 
+                osc.type = 'sine'; osc.frequency.setValueAtTime(800, now);
+                osc.frequency.exponentialRampToValueAtTime(300, now + 0.1);
+                gain.gain.setValueAtTime(0.3, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                osc.start(now); osc.stop(now + 0.1);
+            } else if (type === 'snap') { 
+                osc.type = 'square'; osc.frequency.setValueAtTime(150, now);
+                osc.frequency.exponentialRampToValueAtTime(40, now + 0.15);
+                gain.gain.setValueAtTime(0.4, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+                osc.start(now); osc.stop(now + 0.2);
+            } else if (type === 'win') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(523.25, now); osc.frequency.setValueAtTime(659.25, now + 0.1); osc.frequency.setValueAtTime(783.99, now + 0.2); 
+                gain.gain.setValueAtTime(0.1, now); gain.gain.linearRampToValueAtTime(0.3, now + 0.2); gain.gain.exponentialRampToValueAtTime(0.01, now + 1.5);
+                osc.start(now); osc.stop(now + 1.5);
+            }
+        }
+
+        // --- GAME SYSTEM ---
+        function startGame() {
+            document.getElementById('btn-start').style.display = 'none';
+            document.getElementById('loader').style.display = 'block';
+            
+            camera.start().then(() => { 
+                loadLevel();
+                document.getElementById('start-screen').style.display = 'none';
+                document.getElementById('hud').style.display = 'flex';
+            }).catch(e => { 
+                alert("Kamera Error! Pastikan diizinkan di browser."); 
+                console.error(e);
+            });
+        }
+
+        function loadLevel() {
+            clearInterval(state.timerInterval);
+            state.startTime = Date.now();
+            state.timerInterval = setInterval(updateTimer, 100);
+            updateBestTimeDisplay();
+
+            const data = LEVELS[state.lvlIdx % LEVELS.length];
+            document.getElementById('lvl-num').innerText = state.lvlIdx + 1;
+            document.getElementById('lvl-name-disp').innerText = data.name;
+            state.isPlaying = true;
+            state.pieces = []; // Kosongkan dulu biar gak numpuk
+            
+            state.imgObj = new Image();
+            state.imgObj.crossOrigin = "Anonymous";
+            state.imgObj.src = data.src;
+            
+            state.imgObj.onload = () => { createPieces(); };
+            state.imgObj.onerror = () => { 
+                console.log("Gambar gagal load, coba level lain");
+                state.lvlIdx++; loadLevel(); 
+            };
+            
+            // Kesulitan: Naik setiap 3 level. Mentok di 4x4.
+            state.grid = 2 + Math.floor(state.lvlIdx / 3);
+            if(state.grid > 4) state.grid = 4;
+        }
+
+        function updateTimer() {
+            const diff = Math.floor((Date.now() - state.startTime) / 1000);
+            const m = Math.floor(diff / 60).toString().padStart(2, '0');
+            const s = (diff % 60).toString().padStart(2, '0');
+            document.getElementById('timer-val').innerText = `${m}:${s}`;
+        }
+
+        function updateBestTimeDisplay() {
+            const best = localStorage.getItem('puzzle_best_lvl_' + (state.lvlIdx % LEVELS.length));
+            document.getElementById('best-val').innerText = best ? best : "--:--";
+        }
+
+        function saveBestTime() {
+            const current = document.getElementById('timer-val').innerText;
+            const key = 'puzzle_best_lvl_' + (state.lvlIdx % LEVELS.length);
+            const best = localStorage.getItem(key);
+            if (!best || current < best) {
+                localStorage.setItem(key, current);
+                document.getElementById('best-val').innerText = current;
+            }
+        }
+
+        function createPieces() {
+            state.pieces = [];
+            const rows = state.grid; const cols = state.grid;
+            const size = Math.min(window.innerWidth, window.innerHeight) * 0.7; 
+            const startX = (window.innerWidth - size) / 2;
+            const startY = (window.innerHeight - size) / 2;
+            state.board = { x: startX, y: startY, size: size };
+            const pSize = size / rows;
+
+            for(let y=0; y<rows; y++) {
+                for(let x=0; x<cols; x++) {
+                    state.pieces.push({
+                        sx: (state.imgObj.width/cols)*x, sy: (state.imgObj.height/rows)*y,
+                        sw: state.imgObj.width/cols, sh: state.imgObj.height/rows,
+                        tx: startX + x*pSize, ty: startY + y*pSize,
+                        cx: Math.random() < 0.5 ? 50 + Math.random()*50 : window.innerWidth - 150 - Math.random()*50,
+                        cy: 150 + Math.random()*(window.innerHeight-300),
+                        size: pSize, isLocked: false
+                    });
+                }
+            }
+        }
+
+        function handleGameLogic() {
+            if (state.isPinching && !state.heldPiece) {
+                let closest = null; let minD = 100;
+                state.pieces.forEach(p => {
+                    if (p.isLocked) return;
+                    const d = Math.hypot(state.handX - (p.cx + p.size/2), state.handY - (p.cy + p.size/2));
+                    if (d < p.size/2 && d < minD) { minD = d; closest = p; }
+                });
+                if (closest) { state.heldPiece = closest; playSound('grab'); }
+            }
+            if (state.heldPiece) {
+                if (state.isPinching) {
+                    state.heldPiece.cx = state.handX - state.heldPiece.size/2;
+                    state.heldPiece.cy = state.handY - state.heldPiece.size/2;
+                } else {
+                    const p = state.heldPiece;
+                    const dist = Math.hypot(p.cx - p.tx, p.cy - p.ty);
+                    if (dist < 80) { 
+                        p.cx = p.tx; p.cy = p.ty; p.isLocked = true;
+                        playSound('snap'); checkWin();
+                    }
+                    state.heldPiece = null;
+                }
+            }
+        }
+
+        function checkWin() {
+            if (state.pieces.every(p => p.isLocked)) {
+                clearInterval(state.timerInterval);
+                saveBestTime();
+                playSound('win');
+                const toast = document.getElementById('toast');
+                toast.style.display = 'block';
+                setTimeout(() => {
+                    toast.style.display = 'none';
+                    state.lvlIdx++;
+                    loadLevel();
+                }, 2500);
+            }
+        }
+
+        // --- RENDERING (DENGAN SKELETON) ---
+        function onResults(results) {
+            canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+            const W = canvas.width; const H = canvas.height;
+            
+            // 1. MIRROR CANVAS (Wajib biar skeleton & video pas)
+            ctx.save();
+            ctx.translate(W, 0); ctx.scale(-1, 1);
+            
+            // 2. DRAW VIDEO
+            ctx.drawImage(results.image, 0, 0, W, H);
+            
+            // 3. DRAW SKELETON (Ini yang kamu minta!)
+            if (results.multiHandLandmarks) {
+                for (const landmarks of results.multiHandLandmarks) {
+                    // Garis antar tulang (Connectors)
+                    drawConnectors(ctx, landmarks, HAND_CONNECTIONS, 
+                                 {color: '#00CEC9', lineWidth: 5});
+                    // Titik sendi (Landmarks)
+                    drawLandmarks(ctx, landmarks, 
+                                {color: '#fdcb6e', lineWidth: 2, radius: 4});
+                }
+            }
+            
+            ctx.restore(); // Restore biar gambar puzzle gak ke-mirror dua kali
+
+            // Overlay Kuning Tipis
+            ctx.fillStyle = "rgba(255, 234, 167, 0.2)"; ctx.fillRect(0,0,W,H);
+
+            if (!state.imgObj || !state.isPlaying) return;
+
+            // 4. GHOST IMAGE
+            if (state.board.size > 0) {
+                ctx.save(); ctx.globalAlpha = 0.25;
+                ctx.drawImage(state.imgObj, state.board.x, state.board.y, state.board.size, state.board.size);
+                ctx.strokeStyle = "white"; ctx.lineWidth = 4; ctx.setLineDash([10, 10]);
+                ctx.strokeRect(state.board.x, state.board.y, state.board.size, state.board.size);
+                ctx.restore();
+            }
+
+            // 5. PUZZLE PIECES
+            const sorted = [...state.pieces].sort((a,b) => (a === state.heldPiece ? 1 : a.isLocked ? -1 : 0));
+            sorted.forEach(p => {
+                ctx.save();
+                if (p === state.heldPiece) {
+                    ctx.shadowColor = "rgba(0,0,0,0.5)"; ctx.shadowBlur = 20; ctx.shadowOffsetY = 15;
+                    ctx.translate(p.cx+p.size/2, p.cy+p.size/2); ctx.scale(1.1, 1.1); ctx.translate(-(p.cx+p.size/2), -(p.cy+p.size/2));
+                }
+                ctx.beginPath(); ctx.rect(p.cx, p.cy, p.size, p.size); ctx.clip();
+                ctx.drawImage(state.imgObj, p.sx, p.sy, p.sw, p.sh, p.cx, p.cy, p.size, p.size);
+                ctx.restore();
+                ctx.strokeStyle = p.isLocked ? "#00cec9" : "white"; ctx.lineWidth = p === state.heldPiece ? 5 : 3;
+                ctx.strokeRect(p.cx, p.cy, p.size, p.size);
+            });
+
+            // 6. HAND CURSOR (Tambahan biar jelas titik cubitnya)
+            if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+                const lm = results.multiHandLandmarks[0];
+                const ix = W - (lm[8].x * W); const iy = lm[8].y * H;
+                const tx = W - (lm[4].x * W); const ty = lm[4].y * H;
+                state.handX += (ix - state.handX) * 0.6; state.handY += (iy - state.handY) * 0.6;
+                state.isPinching = Math.hypot(ix - tx, iy - ty) < 60;
+                handleGameLogic();
+                
+                // Cursor bulat di ujung jari telunjuk
+                ctx.beginPath(); ctx.arc(state.handX, state.handY, 15, 0, Math.PI*2);
+                ctx.fillStyle = state.isPinching ? "#fdcb6e" : "rgba(255,255,255,0.5)"; 
+                ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = "white"; ctx.stroke();
+            }
+        }
+
+        const hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
+        hands.setOptions({ maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5 });
+        hands.onResults(onResults);
+
+        const camera = new Camera(video, {
+            onFrame: async () => { await hands.send({image: video}); },
+            width: 1280, height: 720
+        });
+
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+            if(state.imgObj) createPieces();
+        });
+    </script>
+</body>
+</html>
